@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 /// Standard bottom-sheet chrome (drag handle + title) used for detail views
@@ -30,7 +31,7 @@ Future<T?> showPhantomModalSheet<T>({
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.borderMedium,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
