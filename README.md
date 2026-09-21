@@ -6,24 +6,29 @@ administration, Licence management and Notifications.
 
 **Phase 1** (this repo, current state): architecture, design system,
 navigation, role/permission system, and every module's UI/UX wired to
-**mock services behind clean interfaces**. No real backend, no real Scanner
-or EA connection, no real WhatsApp/Telegram integration — see
+**mock services behind clean interfaces**, plus the native Android/iOS
+platform projects. No real backend, no real Scanner or EA connection, no
+real WhatsApp/Telegram integration — see
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full proposal and the
 phase roadmap.
 
-## ⚠️ Important: build environment for this repo
+## Verified build status
 
-This codebase was written in a sandboxed environment **without a working
-Flutter SDK** (its network egress blocks `storage.googleapis.com`, which is
-where Flutter's engine/Dart SDK artifacts are hosted). That means:
+Unlike the very first commit on this branch (written blind, without a
+working Flutter SDK in that sandbox), every commit since has been verified
+against Flutter 3.47.5 stable:
 
-- Every file here was hand-written to be correct, but **`flutter pub get`,
-  `flutter analyze`, `flutter test`, and `flutter run` have not been executed
-  against this code.**
-- Run the "First-time setup" steps below on your own machine before relying
-  on this as a working build. If `flutter analyze` turns up an import typo or
-  similar small issue, it should be quick to fix — the architecture and logic
-  are the parts that took the real effort.
+- `flutter pub get` — resolves cleanly.
+- `flutter analyze` — **0 issues.**
+- `flutter test` — **49/49 passing** (permissions, mock auth, scanner/signal
+  workflow transitions, licence logic, module visibility, navigation
+  authorization/route guards, and dashboard filtering by permission).
+- `android/` and `ios/` platform projects are committed (generated via
+  `flutter create .`, org `dev.codephantom`).
+
+Not yet run in this environment: `flutter run` / `flutter build apk` against
+a real device or emulator (no Android SDK or Chrome installed in this
+sandbox) — see "Known gaps" below.
 
 ## First-time setup
 
@@ -84,6 +89,7 @@ lib/
 test/          unit + widget tests mirroring lib/'s structure
 docs/          ARCHITECTURE.md (the full Phase 1 proposal)
 assets/brand/  logo.png, mark.png (copied from code-phantom-website)
+android/, ios/ native platform projects (generated via `flutter create .`)
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full rationale,
@@ -153,15 +159,19 @@ flutter build appbundle --release
   integrations go" above.
 - No push notifications (FCM) — `NotificationService` is stream-based
   specifically so this is additive later.
-- No `android/` or `ios/` platform folders are committed yet; running
-  `flutter create .` in the repo root (after `flutter pub get`) will
-  generate them without touching `lib/`.
+- Launcher icons are still Flutter's default asset — swapping in
+  `assets/brand/mark.png` needs per-density icon generation
+  (`flutter_launcher_icons` or manual export), not done yet.
+- No tablet nav rail — `AppShell` currently renders the phone bottom-nav
+  bar at every width; a `NavigationRail` breakpoint for tablets (mentioned
+  in `docs/ARCHITECTURE.md` §6) is deferred.
+- Not run in this environment: `flutter run` / `flutter build apk` against
+  a real device or emulator — no Android SDK or Chrome installed in this
+  sandbox. `flutter analyze` and `flutter test` **have** been run and pass
+  (see "Verified build status" above).
 - Licence keys are **visual mocks only** (`CPT-SCN-7F4K-92MQ-X81P` format) —
   never treat them as secure. Real key generation/validation must happen
   server-side.
-- This code has not been run through `flutter analyze`/`flutter test` in
-  this environment (see the build-environment note above) — please run both
-  after `flutter pub get` and report/fix anything that surfaces.
 
 ## Security principles (see `docs/ARCHITECTURE.md` §8 for detail)
 
