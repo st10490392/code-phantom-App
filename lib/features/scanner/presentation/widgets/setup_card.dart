@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utilities/formatters.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../domain/scanner_enums.dart';
 import '../../domain/scanner_setup.dart';
+import '../setup_status_style.dart';
 
 class SetupCard extends StatelessWidget {
   const SetupCard({required this.setup, this.onTap, super.key});
@@ -54,6 +56,17 @@ class SetupCard extends StatelessWidget {
               PhantomChip(label: 'Daily ${setup.dailyBias.wireValue}'),
               PhantomChip(label: setup.session.wireValue.replaceAll('_', ' ')),
               PhantomChip(label: 'Confluence ${setup.confluenceScore}/${setup.confluenceMaximum}'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              StatusBadge(label: setup.status.wireValue, color: setupStatusColor(setup.status)),
+              Text(
+                relativeTime(setup.detectedAt),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         ],

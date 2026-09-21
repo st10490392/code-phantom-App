@@ -8,6 +8,8 @@ class PhantomTextField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.autofillHints,
+    this.onChanged,
+    this.maxLines = 1,
     super.key,
   });
 
@@ -17,6 +19,8 @@ class PhantomTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final Iterable<String>? autofillHints;
+  final ValueChanged<String>? onChanged;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +30,8 @@ class PhantomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       autofillHints: autofillHints,
+      onChanged: onChanged,
+      maxLines: maxLines,
       decoration: InputDecoration(labelText: label),
     );
   }

@@ -12,6 +12,7 @@ import '../../features/ea/presentation/ea_dashboard_screen.dart';
 import '../../features/licences/presentation/licence_list_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
+import '../../features/scanner/presentation/setup_detail_screen.dart';
 import '../../features/settings/presentation/about_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -63,7 +64,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/scanner', builder: (context, state) => const ScannerScreen()),
+          GoRoute(
+            path: '/scanner',
+            builder: (context, state) => const ScannerScreen(),
+            routes: [
+              GoRoute(
+                path: 'setup/:id',
+                builder: (context, state) =>
+                    SetupDetailScreen(setupId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(path: '/clients', builder: (context, state) => const ClientListScreen()),

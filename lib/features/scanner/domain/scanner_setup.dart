@@ -18,6 +18,10 @@ class ScannerSetup {
     required this.detectedAt,
     this.notes,
     this.chartImageUrl,
+    this.reviewedAt,
+    this.reviewedBy,
+    this.rejectionReason,
+    this.editedBeforeApproval = false,
   });
 
   final String id;
@@ -35,23 +39,55 @@ class ScannerSetup {
   final int confluenceScore;
   final int confluenceMaximum;
   final SetupStatus status;
+
+  /// When the (mock) scanner engine first detected this setup. Immutable
+  /// after construction — `copyWith` deliberately has no parameter for it,
+  /// so an edit before approval can never alter the original detection time.
   final DateTime detectedAt;
   final String? notes;
   final String? chartImageUrl;
+
+  /// When an OWNER/ADMIN reviewer actioned this setup (approve or reject).
+  final DateTime? reviewedAt;
+
+  /// Display name of the reviewer who actioned this setup.
+  final String? reviewedBy;
+
+  /// Set only when [status] is [SetupStatus.rejected] — one of
+  /// `scannerRejectionReasons` or free text if "Other" was chosen.
+  final String? rejectionReason;
+
+  /// True once a reviewer has changed a material trade field (entry, stop
+  /// loss, take profits, direction, or timeframe) prior to approval. Set by
+  /// `MockScannerService.update()`, never by the UI directly, so it can't
+  /// be forgotten or faked by a widget.
+  final bool editedBeforeApproval;
 
   double? get tp1 => takeProfits.isNotEmpty ? takeProfits[0] : null;
   double? get tp2 => takeProfits.length > 1 ? takeProfits[1] : null;
   double? get tp3 => takeProfits.length > 2 ? takeProfits[2] : null;
 
-  ScannerSetup copyWith({SetupStatus? status, String? notes}) {
+  ScannerSetup copyWith({
+    String? timeframe,
+    SetupDirection? direction,
+    double? entry,
+    double? stopLoss,
+    List<double>? takeProfits,
+    SetupStatus? status,
+    String? notes,
+    DateTime? reviewedAt,
+    String? reviewedBy,
+    String? rejectionReason,
+    bool? editedBeforeApproval,
+  }) {
     return ScannerSetup(
       id: id,
       symbol: symbol,
-      timeframe: timeframe,
-      direction: direction,
-      entry: entry,
-      stopLoss: stopLoss,
-      takeProfits: takeProfits,
+      timeframe: timeframe ?? this.timeframe,
+      direction: direction ?? this.direction,
+      entry: entry ?? this.entry,
+      stopLoss: stopLoss ?? this.stopLoss,
+      takeProfits: takeProfits ?? this.takeProfits,
       weeklyBias: weeklyBias,
       dailyBias: dailyBias,
       session: session,
@@ -61,6 +97,10 @@ class ScannerSetup {
       detectedAt: detectedAt,
       notes: notes ?? this.notes,
       chartImageUrl: chartImageUrl,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      editedBeforeApproval: editedBeforeApproval ?? this.editedBeforeApproval,
     );
   }
 
@@ -84,6 +124,10 @@ class ScannerSetup {
       detectedAt: DateTime.parse(json['detectedAt'] as String),
       notes: json['notes'] as String?,
       chartImageUrl: json['chartImageUrl'] as String?,
+      reviewedAt: json['reviewedAt'] != null ? DateTime.parse(json['reviewedAt'] as String) : null,
+      reviewedBy: json['reviewedBy'] as String?,
+      rejectionReason: json['rejectionReason'] as String?,
+      editedBeforeApproval: json['editedBeforeApproval'] as bool? ?? false,
     );
   }
 
@@ -104,5 +148,9 @@ class ScannerSetup {
         'detectedAt': detectedAt.toIso8601String(),
         if (notes != null) 'notes': notes,
         if (chartImageUrl != null) 'chartImageUrl': chartImageUrl,
+        if (reviewedAt != null) 'reviewedAt': reviewedAt!.toIso8601String(),
+        if (reviewedBy != null) 'reviewedBy': reviewedBy,
+        if (rejectionReason != null) 'rejectionReason': rejectionReason,
+        'editedBeforeApproval': editedBeforeApproval,
       };
 }

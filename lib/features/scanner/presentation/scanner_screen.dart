@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -8,15 +9,17 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/scanner_enums.dart';
 import 'scanner_providers.dart';
-import 'setup_detail_sheet.dart';
 import 'widgets/setup_card.dart';
 
-/// Pending / Approved / Rejected / History tabs, per brief.
+/// Pending / Approved / Rejected / History tabs for reviewers; a plain
+/// "Approved" tab for everyone else.
 ///
-/// Normal clients (no `Permission.scannerReview`) never see the Pending
-/// tab's approve/reject controls — see `setup_detail_sheet.dart`'s
-/// `PermissionGate`. Clients without explicit grant to view pending items
-/// still only load approved data through `setupsByStatusProvider`.
+/// Normal clients (no `Permission.scannerReview`) never see the review
+/// actions on the detail screen — see `setup_detail_screen.dart`'s
+/// `PermissionGate` — and their tab set has no Pending/Rejected/History,
+/// so there's nothing in the nav to even lead them to that data. The
+/// underlying providers enforce the same rule independently (see
+/// `scanner_providers.dart`), so this is UX, not the only safeguard.
 class ScannerScreen extends ConsumerWidget {
   const ScannerScreen({super.key});
 
@@ -25,7 +28,7 @@ class ScannerScreen extends ConsumerWidget {
     final canReview = ref.watch(hasPermissionProvider(Permission.scannerReview));
     final tabs = canReview
         ? const ['Pending', 'Approved', 'Rejected', 'History']
-        : const ['Approved', 'History'];
+        : const ['Approved'];
 
     return DefaultTabController(
       length: tabs.length,
@@ -55,7 +58,7 @@ class ScannerScreen extends ConsumerWidget {
             if (canReview) const _SetupList(status: SetupStatus.pending),
             const _SetupList(status: SetupStatus.approved),
             if (canReview) const _SetupList(status: SetupStatus.rejected),
-            const _SetupList(status: null), // History = all statuses
+            if (canReview) const _SetupList(status: null), // History = all statuses
           ],
         ),
       ),
@@ -89,7 +92,7 @@ class _SetupList extends ConsumerWidget {
             final setup = setups[i];
             return SetupCard(
               setup: setup,
-              onTap: () => showSetupDetailSheet(context, setup),
+              onTap: () => context.push('/scanner/setup/${setup.id}'),
             );
           },
         );
