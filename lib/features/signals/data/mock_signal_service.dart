@@ -1,25 +1,34 @@
 import 'dart:async';
+import '../../scanner/domain/scanner_setup.dart';
 import '../domain/signal.dart';
 import '../domain/signal_enums.dart';
+import '../domain/signal_mapper.dart';
 import '../domain/signal_performance_summary.dart';
 import 'signal_service.dart';
 
 class MockSignalService implements SignalService {
   MockSignalService() {
     _signals = List.of(_seed);
-    _controller = StreamController<List<Signal>>.broadcast(
-      onListen: () => _controller.add(List.unmodifiable(_signals)),
-    );
   }
 
   late final List<Signal> _signals;
-  late final StreamController<List<Signal>> _controller;
+
+  /// See `mock_scanner_service.dart` for why this is a payload-less "ping"
+  /// rather than a plain `broadcast(onListen: ...)` — each `watchSignals`
+  /// subscriber must independently replay the current snapshot, since
+  /// several filtered views (active/closed/by-status) are often watched
+  /// concurrently and a shared controller's `onListen` only fires once.
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  List<Signal> _filtered(SignalStatus? status) {
+    final all = List<Signal>.unmodifiable(_signals);
+    return status == null ? all : all.where((s) => s.status == status).toList();
+  }
 
   @override
-  Stream<List<Signal>> watchSignals({SignalStatus? status}) {
-    return _controller.stream.map(
-      (all) => status == null ? all : all.where((s) => s.status == status).toList(),
-    );
+  Stream<List<Signal>> watchSignals({SignalStatus? status}) async* {
+    yield _filtered(status);
+    yield* _changes.stream.map((_) => _filtered(status));
   }
 
   @override
@@ -36,8 +45,17 @@ class MockSignalService implements SignalService {
       closedAt: status.isClosed ? DateTime.now() : null,
     );
     _signals[index] = updated;
-    _controller.add(List.unmodifiable(_signals));
+    _changes.add(null);
     return updated;
+  }
+
+  @override
+  Future<Signal> createFromSetup(ScannerSetup setup) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final signal = signalFromApprovedSetup(setup);
+    _signals.add(signal);
+    _changes.add(null);
+    return signal;
   }
 
   @override

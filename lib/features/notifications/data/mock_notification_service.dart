@@ -5,23 +5,26 @@ import 'notification_service.dart';
 class MockNotificationService implements NotificationService {
   MockNotificationService() {
     _notifications = List.of(_seed);
-    _controller = StreamController<List<AppNotification>>.broadcast(
-      onListen: () => _controller.add(List.unmodifiable(_notifications)),
-    );
   }
 
   late final List<AppNotification> _notifications;
-  late final StreamController<List<AppNotification>> _controller;
+
+  /// See `mock_scanner_service.dart` for why this is a payload-less "ping"
+  /// rather than a plain `broadcast(onListen: ...)`.
+  final StreamController<void> _changes = StreamController<void>.broadcast();
 
   @override
-  Stream<List<AppNotification>> watchNotifications() => _controller.stream;
+  Stream<List<AppNotification>> watchNotifications() async* {
+    yield List.unmodifiable(_notifications);
+    yield* _changes.stream.map((_) => List.unmodifiable(_notifications));
+  }
 
   @override
   Future<void> markRead(String notificationId) async {
     final index = _notifications.indexWhere((n) => n.id == notificationId);
     if (index == -1) return;
     _notifications[index] = _notifications[index].copyWith(readAt: DateTime.now());
-    _controller.add(List.unmodifiable(_notifications));
+    _changes.add(null);
   }
 
   @override
@@ -31,7 +34,13 @@ class MockNotificationService implements NotificationService {
         _notifications[i] = _notifications[i].copyWith(readAt: DateTime.now());
       }
     }
-    _controller.add(List.unmodifiable(_notifications));
+    _changes.add(null);
+  }
+
+  @override
+  Future<void> notify(AppNotification notification) async {
+    _notifications.insert(0, notification);
+    _changes.add(null);
   }
 
   static final List<AppNotification> _seed = [
