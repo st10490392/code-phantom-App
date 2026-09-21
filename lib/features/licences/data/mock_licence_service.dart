@@ -7,20 +7,26 @@ import 'licence_service.dart';
 class MockLicenceService implements LicenceService {
   MockLicenceService() {
     _licences = List.of(_seed);
-    _controller = StreamController<List<Licence>>.broadcast(
-      onListen: () => _controller.add(List.unmodifiable(_licences)),
-    );
   }
 
   late final List<Licence> _licences;
-  late final StreamController<List<Licence>> _controller;
   final _random = Random();
 
+  /// See `mock_scanner_service.dart` for why this is a payload-less "ping"
+  /// rather than a plain `broadcast(onListen: ...)` — needed here because
+  /// `watchLicences` is filterable by `userId`, so more than one filtered
+  /// view can be watched concurrently.
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  List<Licence> _filtered(String? userId) {
+    final all = List<Licence>.unmodifiable(_licences);
+    return userId == null ? all : all.where((l) => l.userId == userId).toList();
+  }
+
   @override
-  Stream<List<Licence>> watchLicences({String? userId}) {
-    return _controller.stream.map(
-      (all) => userId == null ? all : all.where((l) => l.userId == userId).toList(),
-    );
+  Stream<List<Licence>> watchLicences({String? userId}) async* {
+    yield _filtered(userId);
+    yield* _changes.stream.map((_) => _filtered(userId));
   }
 
   @override
@@ -44,7 +50,7 @@ class MockLicenceService implements LicenceService {
       status: LicenceStatus.unactivated,
     );
     _licences.add(licence);
-    _controller.add(List.unmodifiable(_licences));
+    _changes.add(null);
     return licence;
   }
 
@@ -79,7 +85,7 @@ class MockLicenceService implements LicenceService {
     if (index == -1) throw StateError('Licence $id not found');
     final updated = update(_licences[index]);
     _licences[index] = updated;
-    _controller.add(List.unmodifiable(_licences));
+    _changes.add(null);
     return updated;
   }
 

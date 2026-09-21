@@ -7,16 +7,19 @@ import 'client_service.dart';
 class MockClientService implements ClientService {
   MockClientService() {
     _clients = List.of(_seed);
-    _controller = StreamController<List<ClientProfile>>.broadcast(
-      onListen: () => _controller.add(List.unmodifiable(_clients)),
-    );
   }
 
   late final List<ClientProfile> _clients;
-  late final StreamController<List<ClientProfile>> _controller;
+
+  /// See `mock_scanner_service.dart` for why this is a payload-less "ping"
+  /// rather than a plain `broadcast(onListen: ...)`.
+  final StreamController<void> _changes = StreamController<void>.broadcast();
 
   @override
-  Stream<List<ClientProfile>> watchClients() => _controller.stream;
+  Stream<List<ClientProfile>> watchClients() async* {
+    yield List.unmodifiable(_clients);
+    yield* _changes.stream.map((_) => List.unmodifiable(_clients));
+  }
 
   @override
   Future<void> setServiceAccess(String userId, PermissionSet permissions) async {
@@ -40,7 +43,7 @@ class MockClientService implements ClientService {
     final index = _clients.indexWhere((c) => c.userId == userId);
     if (index == -1) throw StateError('Client $userId not found');
     _clients[index] = update(_clients[index]);
-    _controller.add(List.unmodifiable(_clients));
+    _changes.add(null);
   }
 
   static final List<ClientProfile> _seed = [

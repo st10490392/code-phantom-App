@@ -219,6 +219,16 @@ Riverpod provider override — no UI changes required. `Stream`-based reads let
 mocks fake push updates (via `Stream.periodic`/`StreamController`) the same
 shape a real backend (WebSocket/SSE/polling) would deliver.
 
+**Mock service rule**: every `StreamController.broadcast(onListen: ...)` used
+by a mock must defer its initial `add()` with `scheduleMicrotask(...)`
+instead of calling it synchronously inside `onListen`. Adding synchronously
+races Riverpod's own subscription setup for the first listener and can
+leave that first value permanently undelivered — the provider then sits on
+`AsyncLoading` forever with no error, which is easy to miss because a
+screen's static text (headings, labels) still renders fine around the
+stuck data. Found and fixed across every mock service during the Scanner
+Approval Workflow milestone; keep new mocks consistent with it.
+
 ## 5. Role / permission model
 
 Roles and permissions are **independent** axes, as required:

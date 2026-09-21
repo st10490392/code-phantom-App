@@ -17,10 +17,11 @@ class _MockEAStore {
     return _controllers.putIfAbsent(
       accountId,
       () => StreamController<EAAccount>.broadcast(
-        onListen: () {
+        // See docs/ARCHITECTURE.md "Mock service rule" — must be deferred.
+        onListen: () => scheduleMicrotask(() {
           final account = accounts[accountId];
           if (account != null) _controllers[accountId]!.add(account);
-        },
+        }),
       ),
     );
   }
