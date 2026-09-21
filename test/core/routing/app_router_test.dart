@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:code_phantom_app/core/permissions/app_role.dart';
+import 'package:code_phantom_app/core/permissions/permission.dart';
+import 'package:code_phantom_app/core/permissions/permission_set.dart';
+import 'package:code_phantom_app/core/routing/app_router.dart';
+import 'package:code_phantom_app/features/auth/data/auth_service.dart';
+import 'package:code_phantom_app/features/auth/domain/auth_session.dart';
+import 'package:code_phantom_app/features/auth/domain/auth_user.dart';
+import 'package:code_phantom_app/features/auth/presentation/auth_providers.dart';
+
+/// Resolves `restoreSession()` to a fixed user immediately, so
+/// [AuthController] reaches `AuthStatus.authenticated` without ever touching
+/// the real `flutter_secure_storage` platform channel (unavailable in
+/// `flutter_test`).
+class _FixedAuthService implements AuthService {
+  _FixedAuthService(this.user);
+  final AuthUser user;
+
+  @override
+  Future<AuthSession?> restoreSession() async => AuthSession(
+        user: user,
+        accessToken: 'test-token',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      );
+
+  @override
+  Future<AuthSession> login({required String email, required String password}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> logout() => throw UnimplementedError();
+
+  @override
+  Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+}
+
+void main() {
+  group('permissionForPath — route → permission mapping', () {
+    test('gated module routes map to their permission', () {
+      expect(permissionForPath('/scanner'), Permission.scannerAccess);
+      expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
+      expect(permissionForPath('/signals'), Permission.signalsAccess);
+      expect(permissionForPath('/ea'), Permission.eaAccess);
+      expect(permissionForPath('/clients'), Permission.clientAdmin);
+      expect(permissionForPath('/clients/42'), Permission.clientAdmin);
+      expect(permissionForPath('/licences'), Permission.licenceAdmin);
+    });
+
+    test('always-open routes have no gate', () {
+      expect(permissionForPath('/dashboard'), isNull);
+      expect(permissionForPath('/notifications'), isNull);
+      expect(permissionForPath('/settings'), isNull);
+      expect(permissionForPath('/settings/profile'), isNull);
+    });
+  });
+
+  group('appRouterProvider redirect — navigation authorization', () {
+    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user) async {
+      late GoRouter router;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(_FixedAuthService(user)),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              router = ref.watch(appRouterProvider);
+              return MaterialApp.router(routerConfig: router);
+            },
+          ),
+        ),
+      );
+      // Bounded pump instead of pumpAndSettle: a loading screen's
+      // CircularProgressIndicator repeats forever and would never let
+      // pumpAndSettle finish, even though the mock auth restore itself
+      // resolves on the next microtask.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      return router;
+    }
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    String locationOf(GoRouter router) =>
+        router.routerDelegate.currentConfiguration.uri.toString();
+
+    testWidgets(
+      'a client without clientAdmin cannot reach /clients via a deep link — '
+      'redirected to /dashboard even though the nav bar already hides it',
+      (tester) async {
+        const scannerClient = AuthUser(
+          id: 'u_scanner',
+          email: 'scanner.client@codephantom.dev',
+          displayName: 'Scanner-Only Client',
+          role: AppRole.scannerClient,
+          permissions: PermissionSet({Permission.scannerAccess}),
+        );
+
+        final router = await pumpRouterAs(tester, scannerClient);
+        expect(locationOf(router), '/dashboard');
+
+        router.go('/clients');
+        await settle(tester);
+
+        expect(locationOf(router), '/dashboard',
+            reason: 'route guard must block direct navigation, not just hide the nav item',);
+      },
+    );
+
+    testWidgets('a user with the matching permission can reach the gated route', (tester) async {
+      const eaClient = AuthUser(
+        id: 'u_ea',
+        email: 'ea.client@codephantom.dev',
+        displayName: 'EA-Only Client',
+        role: AppRole.eaClient,
+        permissions: PermissionSet({Permission.eaAccess}),
+      );
+
+      final router = await pumpRouterAs(tester, eaClient);
+
+      router.go('/ea');
+      await settle(tester);
+
+      expect(locationOf(router), '/ea');
+    });
+
+    testWidgets('OWNER can reach every gated route regardless of stored grants', (tester) async {
+      const owner = AuthUser(
+        id: 'u_owner',
+        email: 'owner@codephantom.dev',
+        displayName: 'Owner',
+        role: AppRole.owner,
+        permissions: PermissionSet.none,
+      );
+
+      final router = await pumpRouterAs(tester, owner);
+
+      for (final path in ['/scanner', '/signals', '/ea', '/clients', '/licences']) {
+        router.go(path);
+        await settle(tester);
+        expect(locationOf(router), path, reason: 'OWNER must not be redirected away from $path');
+      }
+    });
+  });
+}

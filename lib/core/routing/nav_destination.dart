@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../features/auth/domain/auth_user.dart';
 import '../permissions/permission.dart';
 
 /// Describes one of the 8 primary nav areas from the brief. `permission ==
@@ -74,3 +75,20 @@ const List<NavDestination> primaryNavDestinations = [
     selectedIcon: Icons.settings,
   ),
 ];
+
+/// Filters [primaryNavDestinations] down to what [user] may see: items with
+/// no [NavDestination.permission] are always visible, OWNER sees everything,
+/// everyone else needs the matching grant on their own [AuthUser.permissions].
+///
+/// This is the single source of truth for "module visibility" — both
+/// [AppShell] (bottom nav) and anything else that needs to know which
+/// modules a user can reach should call this rather than re-deriving the
+/// same filter.
+List<NavDestination> visibleNavDestinationsFor(AuthUser? user) {
+  return primaryNavDestinations.where((d) {
+    if (d.permission == null) return true;
+    if (user == null) return false;
+    if (user.isOwner) return true;
+    return user.permissions.has(d.permission!);
+  }).toList();
+}

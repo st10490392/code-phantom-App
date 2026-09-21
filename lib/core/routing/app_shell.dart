@@ -17,12 +17,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final visible = primaryNavDestinations.where((d) {
-      if (d.permission == null) return true;
-      if (user == null) return false;
-      if (user.isOwner) return true;
-      return user.permissions.has(d.permission!);
-    }).toList();
+    final visible = visibleNavDestinationsFor(user);
 
     final location = GoRouterState.of(context).matchedLocation;
     final selectedIndex = visible.indexWhere((d) => location.startsWith(d.path));

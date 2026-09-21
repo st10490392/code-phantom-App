@@ -42,7 +42,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (loggingIn || atSplash) return '/dashboard';
 
       final user = authState.user;
-      final gate = _permissionForPath(state.matchedLocation);
+      final gate = permissionForPath(state.matchedLocation);
       if (gate != null && user != null && !user.isOwner && !user.permissions.has(gate)) {
         return '/dashboard';
       }
@@ -86,7 +86,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-Permission? _permissionForPath(String path) {
+/// The permission a route requires, or `null` if it's open to every
+/// authenticated user (Dashboard, Notifications, Settings). Used by the
+/// `redirect` guard above and unit-testable on its own — see
+/// `test/core/routing/app_router_test.dart`.
+Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
   if (path.startsWith('/ea')) return Permission.eaAccess;
