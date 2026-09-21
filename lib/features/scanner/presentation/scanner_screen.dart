@@ -7,7 +7,6 @@ import '../../../core/theme/brand_assets.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/scanner_enums.dart';
-import '../domain/scanner_setup.dart';
 import 'scanner_providers.dart';
 import 'setup_detail_sheet.dart';
 import 'widgets/setup_card.dart';

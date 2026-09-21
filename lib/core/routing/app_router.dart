@@ -24,8 +24,6 @@ import 'app_shell.dart';
 /// the user lacks the permission. This is still a UX safeguard, not
 /// authorization — see docs/ARCHITECTURE.md §5/§8.
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.watch(authControllerProvider.notifier);
-
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: _AuthRefreshListenable(ref),

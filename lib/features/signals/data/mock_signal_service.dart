@@ -1,5 +1,4 @@
 import 'dart:async';
-import '../../scanner/domain/scanner_enums.dart';
 import '../domain/signal.dart';
 import '../domain/signal_enums.dart';
 import '../domain/signal_performance_summary.dart';

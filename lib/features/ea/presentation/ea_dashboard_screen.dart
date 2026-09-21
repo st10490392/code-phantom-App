@@ -106,7 +106,7 @@ class _MetricsGrid extends StatelessWidget {
       _Metric('Risk mode', account.riskMode.wireValue.replaceAll('_', ' ')),
       _Metric('Risk %', '${account.riskPercentage.toStringAsFixed(2)}%'),
       _Metric('Trading', account.tradingEnabled ? 'ENABLED' : 'DISABLED',
-          color: account.tradingEnabled ? AppColors.success : AppColors.mutedText),
+          color: account.tradingEnabled ? AppColors.success : AppColors.mutedText,),
     ];
 
     return GridView.count(

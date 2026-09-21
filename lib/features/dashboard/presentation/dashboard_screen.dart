@@ -164,7 +164,7 @@ class _ScannerSummary extends ConsumerWidget {
           value: '${setups.where((s) => s.status == SetupStatus.rejected).length}',
           color: AppColors.error,
         ),
-      ]),
+      ],),
     );
   }
 }
@@ -190,7 +190,7 @@ class _SignalsSummary extends ConsumerWidget {
         value: '${performance.valueOrNull?.winRatePercent.toStringAsFixed(0) ?? '–'}%',
         color: AppColors.electricBlue,
       ),
-    ]);
+    ],);
   }
 }
 
@@ -215,7 +215,7 @@ class _EASummary extends ConsumerWidget {
           color: account.dailyProfit >= 0 ? AppColors.success : AppColors.error,
         ),
         _SummaryTile(label: 'Drawdown', value: '${account.dailyDrawdown.toStringAsFixed(1)}%'),
-      ]),
+      ],),
     );
   }
 }
@@ -242,7 +242,7 @@ class _ClientsSummary extends ConsumerWidget {
           _SummaryTile(label: 'Active', value: '$active', color: AppColors.success),
           _SummaryTile(label: 'Expiring soon', value: '$expiringSoon', color: AppColors.warning),
           _SummaryTile(label: 'Disabled/Suspended', value: '$disabled', color: AppColors.error),
-        ]);
+        ],);
       },
     );
   }

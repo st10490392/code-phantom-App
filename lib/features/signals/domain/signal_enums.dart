@@ -1,5 +1,3 @@
-import '../../scanner/domain/scanner_enums.dart';
-
 export '../../scanner/domain/scanner_enums.dart' show SetupDirection, TradingSession;
 
 enum SignalStatus {

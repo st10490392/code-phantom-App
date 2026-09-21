@@ -98,7 +98,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surfaceRaised,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.modalRadius),
       ),
-      bottomSheetTheme: BottomSheetThemeData(
+      bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceRaised,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(

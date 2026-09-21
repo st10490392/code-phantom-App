@@ -16,11 +16,11 @@ void main() {
       overrides: [
         currentUserProvider.overrideWithValue(user),
       ],
-      child: MaterialApp(
+      child: const MaterialApp(
         home: Scaffold(
           body: PermissionGate(
             permission: Permission.eaControl,
-            child: const SizedBox(key: marker),
+            child: SizedBox(key: marker),
           ),
         ),
       ),
@@ -28,12 +28,12 @@ void main() {
   }
 
   testWidgets('hides the child when the user lacks the permission', (tester) async {
-    final user = AuthUser(
+    const user = AuthUser(
       id: 'u1',
       email: 'trader@codephantom.dev',
       displayName: 'Trader',
       role: AppRole.trader,
-      permissions: const PermissionSet({Permission.scannerAccess}),
+      permissions: PermissionSet({Permission.scannerAccess}),
     );
 
     await tester.pumpWidget(buildApp(user));
@@ -42,12 +42,12 @@ void main() {
   });
 
   testWidgets('shows the child when the user has the permission', (tester) async {
-    final user = AuthUser(
+    const user = AuthUser(
       id: 'u2',
       email: 'admin@codephantom.dev',
       displayName: 'Admin',
       role: AppRole.admin,
-      permissions: const PermissionSet({Permission.eaControl}),
+      permissions: PermissionSet({Permission.eaControl}),
     );
 
     await tester.pumpWidget(buildApp(user));
@@ -56,7 +56,7 @@ void main() {
   });
 
   testWidgets('OWNER always sees the gated child regardless of stored grants', (tester) async {
-    final owner = AuthUser(
+    const owner = AuthUser(
       id: 'u3',
       email: 'owner@codephantom.dev',
       displayName: 'Owner',

@@ -4,7 +4,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/brand_assets.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../scanner/domain/scanner_enums.dart';
 import '../../domain/signal.dart';
 import '../../domain/signal_enums.dart';
 

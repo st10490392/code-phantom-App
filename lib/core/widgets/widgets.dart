@@ -1,4 +1,6 @@
 /// Barrel export for the shared design-system widget library.
+library;
+
 export 'brand_mark.dart';
 export 'confirm_dialog.dart';
 export 'phantom_button.dart';

@@ -17,7 +17,7 @@ class MockAccount {
 }
 
 final List<MockAccount> mockAccounts = [
-  MockAccount(
+  const MockAccount(
     'owner@codephantom.dev',
     'owner123',
     AuthUser(
@@ -83,7 +83,7 @@ final List<MockAccount> mockAccounts = [
       permissions: defaultPermissionsFor(AppRole.eaClient),
     ),
   ),
-  MockAccount(
+  const MockAccount(
     'friend@codephantom.dev',
     'internal123',
     AuthUser(
@@ -93,7 +93,7 @@ final List<MockAccount> mockAccounts = [
       role: AppRole.internal,
       // Illustrates independent role/permission axes from the brief:
       // scanner+signals ON, EA/admin OFF, for an INTERNAL tester.
-      permissions: const PermissionSet({
+      permissions: PermissionSet({
         Permission.scannerAccess,
         Permission.signalsAccess,
       }),
