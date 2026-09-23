@@ -30,6 +30,14 @@ Not yet run in this environment: `flutter run` / `flutter build apk` against
 a real device or emulator (no Android SDK or Chrome installed in this
 sandbox) — see "Known gaps" below.
 
+## Release & platform docs
+
+- [`docs/RELEASE_ANDROID.md`](docs/RELEASE_ANDROID.md) - signed Android
+  releases via GitHub Actions (staging/production), signing key handling,
+  Play Console steps.
+- [`docs/PLATFORM_INTEGRATION.md`](docs/PLATFORM_INTEGRATION.md) - backend
+  account/licence/device/PIN contracts the app will adopt.
+
 ## First-time setup
 
 1. Install Flutter (stable channel) — see
