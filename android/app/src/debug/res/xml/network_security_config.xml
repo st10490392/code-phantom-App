@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG BUILD ONLY. Lives under src/debug/, so Gradle's manifest/resource
+  merger never applies it to profile or release builds — cleartext (plain
+  HTTP, non-TLS) traffic is never permitted outside a debug APK.
+
+  Needed because physical-device development currently talks to a local
+  Windows backend over plain HTTP (e.g. http://<LAN-IP>:8080) that has no
+  TLS certificate; Android blocks cleartext traffic by default since API 28.
+  The LAN IP itself is never known at build time here — it's supplied per
+  build via the dart-define flag API_BASE_URL — so this permits cleartext
+  broadly rather than pinning one domain, which is standard practice for a
+  debug-only local-dev configuration.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
