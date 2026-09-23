@@ -1,6 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/api_config.dart';
+import '../../../core/config/app_environment.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/app_exceptions.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/storage/secure_storage.dart';
+import '../../../core/storage/token_storage.dart';
+import '../data/api_auth_service.dart';
 import '../data/auth_service.dart';
 import '../data/mock_auth_service.dart';
 import '../domain/auth_session.dart';
@@ -8,11 +14,36 @@ import '../domain/auth_user.dart';
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
 
-/// Swap this single provider for an `ApiAuthService` in Phase 2 — nothing
-/// else in the app needs to change.
-final authServiceProvider = Provider<AuthService>(
-  (ref) => MockAuthService(ref.watch(secureStorageProvider)),
+final tokenStorageProvider = Provider<TokenStorage>(
+  (ref) => TokenStorage(ref.watch(secureStorageProvider)),
 );
+
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient(baseUrl: ApiConfig.baseUrl, tokenStorage: ref.watch(tokenStorageProvider)),
+);
+
+/// The environment this build/run is targeting. Defaults to
+/// [ApiConfig.environment] (a `--dart-define=APP_ENV=...` build flag,
+/// itself defaulting to [AppEnvironment.mock]) — overridden directly in
+/// tests (`appEnvironmentProvider.overrideWithValue(...)`) so DEVELOPMENT-
+/// mode provider selection is testable without a build-time flag.
+final appEnvironmentProvider = Provider<AppEnvironment>((ref) => ApiConfig.environment);
+
+/// MOCK → `MockAuthService` (existing mock accounts, untouched).
+/// DEVELOPMENT/PRODUCTION → `ApiAuthService` against the real CodePhantom
+/// backend. This is the only provider that changes per environment —
+/// everything downstream (`AuthController`, `PermissionGate`, route
+/// guards, every screen) depends on the `AuthService` interface, not on
+/// which implementation is active.
+final authServiceProvider = Provider<AuthService>((ref) {
+  switch (ref.watch(appEnvironmentProvider)) {
+    case AppEnvironment.mock:
+      return MockAuthService(ref.watch(secureStorageProvider));
+    case AppEnvironment.development:
+    case AppEnvironment.production:
+      return ApiAuthService(ref.watch(apiClientProvider), ref.watch(tokenStorageProvider));
+  }
+});
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
@@ -58,7 +89,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final session = await _authService.login(email: email, password: password);
       state = AuthState(status: AuthStatus.authenticated, session: session);
-    } on AuthException catch (e) {
+    } on AppException catch (e) {
       state = AuthState(
         status: AuthStatus.unauthenticated,
         errorMessage: e.message,
