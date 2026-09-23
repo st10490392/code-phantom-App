@@ -30,6 +30,16 @@ dependencies:
   # Formatting
   intl: ^0.19.0
 
+  # Networking (real CodePhantom backend, starting with auth in this
+  # milestone). Chosen over the bare `http` package because the app needs
+  # per-request Authorization header injection, connect/receive timeouts,
+  # and a custom HttpClientAdapter for tests (fake transport, no real
+  # network) — dio supports all three natively; `http` would need a hand
+  # -rolled wrapper for the same behavior. Widely maintained, ~3M+ pub
+  # points, used by the majority of production Flutter apps that talk to a
+  # REST backend.
+  dio: ^5.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
