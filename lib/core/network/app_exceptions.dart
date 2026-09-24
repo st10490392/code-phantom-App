@@ -46,6 +46,16 @@ final class AuthorizationException extends AppException {
   const AuthorizationException([super.message = 'You do not have permission to perform this action.']);
 }
 
+/// 403 with `error.code == 'EMAIL_NOT_VERIFIED'` on a login attempt — the
+/// account exists and the password is correct, but the backend requires a
+/// verified email before a session can be established. Distinguished from
+/// [AuthorizationException] (suspended/disabled) so the login screen can
+/// route the user straight to the verification/resend flow instead of just
+/// showing an error string.
+final class EmailNotVerifiedException extends AppException {
+  const EmailNotVerifiedException([super.message = 'Please verify your email before signing in.']);
+}
+
 /// 400 / `VALIDATION_ERROR` — malformed or rejected request body.
 final class ValidationException extends AppException {
   const ValidationException(super.message, {this.details});

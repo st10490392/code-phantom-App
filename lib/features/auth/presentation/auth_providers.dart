@@ -105,6 +105,19 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> requestPasswordReset(String email) =>
       _authService.requestPasswordReset(email: email);
+
+  /// Never touches [state] — a new registration has no session to hold
+  /// (email verification is required first). Errors propagate to the
+  /// caller (the Create Account screen) as-is.
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) =>
+      _authService.register(displayName: displayName, email: email, password: password);
+
+  Future<void> resendVerificationEmail(String email) =>
+      _authService.resendVerificationEmail(email: email);
 }
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(

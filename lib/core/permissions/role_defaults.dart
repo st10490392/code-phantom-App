@@ -31,6 +31,11 @@ PermissionSet defaultPermissionsFor(AppRole role) {
       return const PermissionSet({Permission.signalsAccess});
     case AppRole.eaClient:
       return const PermissionSet({Permission.eaAccess});
+    case AppRole.client:
+      // A freshly self-registered CLIENT starts with zero service
+      // entitlements — Scanner/Signals/EA access is granted explicitly by
+      // an OWNER/ADMIN later, never assumed at signup.
+      return PermissionSet.none;
     case AppRole.internal:
       return PermissionSet.none;
   }

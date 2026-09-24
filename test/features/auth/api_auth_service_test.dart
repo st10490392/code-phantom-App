@@ -134,6 +134,28 @@ void main() {
       );
     });
 
+    test('a 403 with code EMAIL_NOT_VERIFIED surfaces as EmailNotVerifiedException', () async {
+      final b = _build();
+      b.mock(
+        'POST',
+        '/auth/login',
+        (_) => const FakeResponse(
+          statusCode: 403,
+          body: {
+            'error': {
+              'code': 'EMAIL_NOT_VERIFIED',
+              'message': 'Please verify your email before signing in.',
+            },
+          },
+        ),
+      );
+
+      await expectLater(
+        b.service.login(email: 'new.client@codephantom.dev', password: 'correct-horse'),
+        throwsA(isA<EmailNotVerifiedException>()),
+      );
+    });
+
     test('a network failure throws NetworkException', () async {
       final b = _build();
       b.mock('POST', '/auth/login', (_) => const FakeResponse.networkFailure());
@@ -305,6 +327,126 @@ void main() {
       expect(session.user.permissions.has(Permission.scannerAccess), isTrue);
       expect(session.user.permissions.has(Permission.scannerReview), isFalse);
       expect(session.user.permissions.has(Permission.clientAdmin), isFalse);
+    });
+  });
+
+  group('ApiAuthService.register', () {
+    test('posts display name/email/password and never stores a session', () async {
+      final b = _build();
+      Map<String, dynamic>? sentBody;
+      b.mock('POST', '/auth/register', (options) {
+        sentBody = Map<String, dynamic>.from(options.data as Map);
+        return const FakeResponse(
+          statusCode: 201,
+          body: {
+            'data': {'message': 'Check your email to verify your account.'},
+          },
+        );
+      });
+
+      await b.service.register(
+        displayName: 'New Client',
+        email: 'new.client@codephantom.dev',
+        password: 'a-strong-password-123',
+      );
+
+      expect(sentBody, {
+        'display_name': 'New Client',
+        'email': 'new.client@codephantom.dev',
+        'password': 'a-strong-password-123',
+      });
+      expect(await b.tokenStorage.hasStoredSession(), isFalse,
+          reason: 'registration must never establish a local session — email verification is required first',);
+    });
+
+    test('an email already registered (409) surfaces as ValidationException', () async {
+      final b = _build();
+      b.mock(
+        'POST',
+        '/auth/register',
+        (_) => const FakeResponse(
+          statusCode: 409,
+          body: {
+            'error': {'code': 'CONFLICT', 'message': 'An account with that email already exists.'},
+          },
+        ),
+      );
+
+      await expectLater(
+        b.service.register(
+          displayName: 'New Client',
+          email: 'owner@codephantom.dev',
+          password: 'a-strong-password-123',
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
+    test('a weak password rejected by the backend (400) surfaces as ValidationException', () async {
+      final b = _build();
+      b.mock(
+        'POST',
+        '/auth/register',
+        (_) => const FakeResponse(
+          statusCode: 400,
+          body: {
+            'error': {'code': 'BAD_REQUEST', 'message': 'Password does not meet requirements.'},
+          },
+        ),
+      );
+
+      await expectLater(
+        b.service.register(
+          displayName: 'New Client',
+          email: 'weak.pw@codephantom.dev',
+          password: 'a-strong-password-123',
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
+    test('a network failure during registration throws NetworkException', () async {
+      final b = _build();
+      b.mock('POST', '/auth/register', (_) => const FakeResponse.networkFailure());
+
+      await expectLater(
+        b.service.register(
+          displayName: 'New Client',
+          email: 'new.client@codephantom.dev',
+          password: 'a-strong-password-123',
+        ),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+  });
+
+  group('ApiAuthService.resendVerificationEmail', () {
+    test('posts the email and succeeds', () async {
+      final b = _build();
+      Map<String, dynamic>? sentBody;
+      b.mock('POST', '/auth/verification/resend', (options) {
+        sentBody = Map<String, dynamic>.from(options.data as Map);
+        return const FakeResponse(
+          statusCode: 202,
+          body: {
+            'data': {'message': 'If that account exists, a verification email has been sent.'},
+          },
+        );
+      });
+
+      await b.service.resendVerificationEmail(email: 'new.client@codephantom.dev');
+
+      expect(sentBody, {'email': 'new.client@codephantom.dev'});
+    });
+
+    test('a resend failure surfaces as a typed AppException', () async {
+      final b = _build();
+      b.mock('POST', '/auth/verification/resend', (_) => const FakeResponse.networkFailure());
+
+      await expectLater(
+        b.service.resendVerificationEmail(email: 'new.client@codephantom.dev'),
+        throwsA(isA<NetworkException>()),
+      );
     });
   });
 }

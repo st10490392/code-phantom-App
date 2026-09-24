@@ -27,15 +27,21 @@ AppException mapDioException(DioException error) {
   final body = response.data;
   final errorObject = body is Map ? body['error'] : null;
   final backendMessage = errorObject is Map ? errorObject['message'] as String? : null;
+  final backendCode = errorObject is Map ? errorObject['code'] as String? : null;
   final details = errorObject is Map ? errorObject['details'] : null;
   final detailsMap = details is Map<String, dynamic> ? details : null;
 
   return switch (status) {
-    400 => ValidationException(backendMessage ?? 'Invalid request.', details: detailsMap),
+    // 409 (e.g. registering an email that already exists) is surfaced the
+    // same way as 400 — both are "the request as submitted was rejected",
+    // shown identically as a form-level error.
+    400 || 409 => ValidationException(backendMessage ?? 'Invalid request.', details: detailsMap),
     401 => AuthenticationException(backendMessage ?? 'Invalid email or password.'),
-    403 => AuthorizationException(
-        backendMessage ?? 'You do not have permission to perform this action.',
-      ),
+    403 => backendCode == 'EMAIL_NOT_VERIFIED'
+        ? EmailNotVerifiedException(backendMessage ?? 'Please verify your email before signing in.')
+        : AuthorizationException(
+            backendMessage ?? 'You do not have permission to perform this action.',
+          ),
     >= 500 => ServerException(backendMessage ?? 'Server error. Please try again later.'),
     _ => ServerException(backendMessage ?? 'Something went wrong. Please try again.'),
   };

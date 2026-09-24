@@ -46,11 +46,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isSubmitting = true;
       _error = null;
     });
+    final email = _emailController.text.trim();
     try {
-      await ref
-          .read(authControllerProvider.notifier)
-          .login(_emailController.text.trim(), _passwordController.text);
+      await ref.read(authControllerProvider.notifier).login(email, _passwordController.text);
       if (mounted) context.go('/dashboard');
+    } on EmailNotVerifiedException {
+      // Actionable, not just a message: send the user straight to the
+      // resend/verify flow instead of leaving them stuck on a login error.
+      if (mounted) context.push('/verify-email', extra: email);
     } catch (e) {
       final message = e is AppException ? e.message : 'Something went wrong. Please try again.';
       setState(() => _error = message);
@@ -73,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(child: BrandLockup(width: 180)),
+                  const AuthBrandHeader(),
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
                     'Sign in',
@@ -113,6 +116,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextButton(
                     onPressed: () => context.push('/forgot-password'),
                     child: const Text('Forgot password?'),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'New to CodePhantom?',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  PhantomButton(
+                    label: 'Create account',
+                    variant: PhantomButtonVariant.secondary,
+                    expand: true,
+                    onPressed: () => context.push('/register'),
                   ),
                   if (_isMockMode) ...[
                     const SizedBox(height: AppSpacing.xxl),

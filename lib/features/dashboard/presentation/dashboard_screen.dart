@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/permissions/app_role.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -24,6 +26,16 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
+
+    // A freshly self-registered CLIENT has role CLIENT and permissions: []
+    // from `/me` — the generic module-summary layout below would just
+    // render an near-empty page (every `hasXAccess` flag false). Show a
+    // dedicated, honest "nothing enabled yet" state instead of a
+    // blank/broken-looking dashboard.
+    if (user?.role == AppRole.client) {
+      return const _ClientOnboardingView();
+    }
+
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
     final hasSignalsAccess = ref.watch(hasPermissionProvider(Permission.signalsAccess));
     final hasEaAccess = ref.watch(hasPermissionProvider(Permission.eaAccess));
@@ -286,5 +298,69 @@ class _NotificationsSummary extends ConsumerWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+/// Neutral home state for a CLIENT with no services enabled yet. Never
+/// implies the account owns Scanner/Signals/EA access it hasn't been
+/// granted — the account becomes useful the moment an OWNER/ADMIN grants a
+/// permission, which surfaces automatically on the next `/me` refresh
+/// (login, or restart) without any change needed here.
+class _ClientOnboardingView extends ConsumerWidget {
+  const _ClientOnboardingView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle_outline, color: AppColors.success, size: 40),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Welcome to CodePhantom',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Your account is active.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                PhantomCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No services are enabled on your account yet.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Scanner, Signals and EA access will appear here when enabled.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                PhantomButton(
+                  label: 'View profile',
+                  variant: PhantomButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => context.push('/settings/profile'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

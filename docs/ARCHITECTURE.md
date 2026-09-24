@@ -234,7 +234,7 @@ Approval Workflow milestone; keep new mocks consistent with it.
 Roles and permissions are **independent** axes, as required:
 
 ```dart
-enum AppRole { owner, admin, trader, scannerClient, signalClient, eaClient, internal }
+enum AppRole { owner, admin, trader, scannerClient, signalClient, eaClient, client, internal }
 
 enum Permission {
   scannerAccess,
@@ -261,7 +261,10 @@ class PermissionSet {
   app come from the user's own `PermissionSet` on `AuthUser`, not from a
   role→permission lookup table — this is what makes User A / User B in the
   brief (same role shape, different toggles) possible. `INTERNAL` has no
-  default permissions at all; every grant is explicit.
+  default permissions at all; every grant is explicit. `CLIENT` (self-service
+  sign-up, starting with the Create Account milestone) is the same: zero
+  default permissions, every service entitlement (Scanner/Signals/EA) granted
+  explicitly by an OWNER/ADMIN afterwards.
 - `OWNER` is special-cased to always evaluate `has()` as `true` (full access),
   everyone else is checked against their stored `PermissionSet`.
 - **UI enforcement**: a `PermissionGate(permission: ..., child: ...)` widget

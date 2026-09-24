@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/app_environment.dart';
 import '../../features/auth/presentation/auth_providers.dart';
+import '../../features/auth/presentation/create_account_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_placeholder_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/clients/presentation/client_list_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
@@ -30,7 +33,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: _AuthRefreshListenable(ref),
     redirect: (context, state) {
       final authState = ref.read(authControllerProvider);
-      final loggingIn = ['/login', '/forgot-password', '/register'].contains(state.matchedLocation);
+      final loggingIn = ['/login', '/forgot-password', '/register', '/verify-email']
+          .contains(state.matchedLocation);
       final atSplash = state.matchedLocation == '/splash';
 
       if (authState.status == AuthStatus.unknown) {
@@ -58,7 +62,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterPlaceholderScreen(),
+        // MOCK mode has no signup path (its account list is fixed) — only
+        // DEVELOPMENT/PRODUCTION show the real registration screen.
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            final isMock = ref.watch(appEnvironmentProvider) == AppEnvironment.mock;
+            return isMock ? const RegisterPlaceholderScreen() : const CreateAccountScreen();
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        // `extra` is the email just registered (or the one just attempted at
+        // login, if that attempt reported the account isn't verified yet).
+        // No deep-link support this milestone — reaching this route any
+        // other way (e.g. a cold app restart) shows a blank-email fallback.
+        builder: (context, state) => VerifyEmailScreen(email: state.extra as String? ?? ''),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),

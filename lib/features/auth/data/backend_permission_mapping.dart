@@ -53,6 +53,7 @@ const List<AppRole> _rolePriority = [
   AppRole.scannerClient,
   AppRole.signalClient,
   AppRole.eaClient,
+  AppRole.client,
   AppRole.internal,
 ];
 

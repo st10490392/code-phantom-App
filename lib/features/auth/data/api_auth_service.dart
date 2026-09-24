@@ -9,7 +9,17 @@ import 'backend_permission_mapping.dart';
 /// Real CodePhantom backend implementation of [AuthService] — see
 /// `docs/ARCHITECTURE.md` §API auth for the endpoint contract this follows
 /// (`POST /auth/login`, `/auth/logout`, `/auth/refresh`,
-/// `/auth/password-reset/request`, `GET /me`).
+/// `/auth/password-reset/request`, `GET /me`, `POST /auth/register`,
+/// `POST /auth/verification/resend`).
+///
+/// `register`/`resendVerificationEmail` follow the same request/response
+/// shape as the existing password-reset endpoints (snake_case body, a
+/// generic `{ data: { message } }` success envelope, no account-existence
+/// signal in the response) — the CodePhantom backend doesn't expose these
+/// two routes yet as of this milestone (see the "next backend milestone"
+/// note in the mobile app's own history), so this is the anticipated
+/// contract the mobile client is built against, ready to activate the
+/// moment the backend ships it.
 ///
 /// Startup restoration (`restoreSession`) does exactly what the milestone
 /// asks: inspect the stored session, refresh if the access token looks
@@ -96,6 +106,37 @@ class ApiAuthService implements AuthService {
   Future<void> requestPasswordReset({required String email}) async {
     await _client.post(
       '/auth/password-reset/request',
+      requiresAuth: false,
+      body: {'email': email},
+    );
+  }
+
+  @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) async {
+    // `password` is sent once in this request body — never logged, never
+    // written to storage. The response is intentionally never read for
+    // tokens: registration requires email verification before a session
+    // can exist, so this call never persists anything via `_persistTokens`,
+    // regardless of what the backend response happens to contain.
+    await _client.post(
+      '/auth/register',
+      requiresAuth: false,
+      body: {
+        'display_name': displayName,
+        'email': email,
+        'password': password,
+      },
+    );
+  }
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) async {
+    await _client.post(
+      '/auth/verification/resend',
       requiresAuth: false,
       body: {'email': email},
     );

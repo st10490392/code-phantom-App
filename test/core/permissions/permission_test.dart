@@ -69,5 +69,9 @@ void main() {
       expect(perms.has(Permission.licenceAdmin), isTrue);
       expect(perms.has(Permission.eaAccess), isFalse);
     });
+
+    test('CLIENT starts with zero service entitlements — grants come later from OWNER/ADMIN', () {
+      expect(defaultPermissionsFor(AppRole.client).granted, isEmpty);
+    });
   });
 }

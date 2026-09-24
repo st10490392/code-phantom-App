@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:code_phantom_app/core/config/app_environment.dart';
 import 'package:code_phantom_app/core/permissions/app_role.dart';
 import 'package:code_phantom_app/core/permissions/permission.dart';
 import 'package:code_phantom_app/core/permissions/permission_set.dart';
@@ -10,6 +11,8 @@ import 'package:code_phantom_app/features/auth/data/auth_service.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_session.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_user.dart';
 import 'package:code_phantom_app/features/auth/presentation/auth_providers.dart';
+import 'package:code_phantom_app/features/auth/presentation/create_account_screen.dart';
+import 'package:code_phantom_app/features/auth/presentation/register_placeholder_screen.dart';
 
 /// Resolves `restoreSession()` to a fixed user immediately, so
 /// [AuthController] reaches `AuthStatus.authenticated` without ever touching
@@ -35,6 +38,45 @@ class _FixedAuthService implements AuthService {
 
   @override
   Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+
+  @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) => throw UnimplementedError();
+}
+
+/// Always unauthenticated — for exercising pre-login routes (`/register`)
+/// without the router immediately bouncing to `/dashboard`.
+class _UnauthenticatedAuthService implements AuthService {
+  @override
+  Future<AuthSession?> restoreSession() async => null;
+
+  @override
+  Future<AuthSession> login({required String email, required String password}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> logout() => throw UnimplementedError();
+
+  @override
+  Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+
+  @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) => throw UnimplementedError();
 }
 
 void main() {
@@ -130,6 +172,29 @@ void main() {
       expect(locationOf(router), '/ea');
     });
 
+    testWidgets(
+      'a new CLIENT with zero permissions cannot reach any gated module via a deep link',
+      (tester) async {
+        const client = AuthUser(
+          id: 'u_client',
+          email: 'new.client@codephantom.dev',
+          displayName: 'New Client',
+          role: AppRole.client,
+          permissions: PermissionSet.none,
+        );
+
+        final router = await pumpRouterAs(tester, client);
+        expect(locationOf(router), '/dashboard');
+
+        for (final path in ['/scanner', '/signals', '/ea', '/clients', '/licences']) {
+          router.go(path);
+          await settle(tester);
+          expect(locationOf(router), '/dashboard',
+              reason: 'CLIENT with no grants must be redirected away from $path',);
+        }
+      },
+    );
+
     testWidgets('OWNER can reach every gated route regardless of stored grants', (tester) async {
       const owner = AuthUser(
         id: 'u_owner',
@@ -146,6 +211,53 @@ void main() {
         await settle(tester);
         expect(locationOf(router), path, reason: 'OWNER must not be redirected away from $path');
       }
+    });
+  });
+
+  group('/register — environment-based screen selection', () {
+    Future<GoRouter> pumpRegisterRouteAs(WidgetTester tester, AppEnvironment env) async {
+      late GoRouter router;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(_UnauthenticatedAuthService()),
+            appEnvironmentProvider.overrideWithValue(env),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              router = ref.watch(appRouterProvider);
+              return MaterialApp.router(routerConfig: router);
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      router.go('/register');
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      return router;
+    }
+
+    testWidgets('MOCK mode shows the placeholder registration screen', (tester) async {
+      await pumpRegisterRouteAs(tester, AppEnvironment.mock);
+
+      expect(find.byType(RegisterPlaceholderScreen), findsOneWidget);
+      expect(find.byType(CreateAccountScreen), findsNothing);
+    });
+
+    testWidgets('DEVELOPMENT mode shows the real Create Account screen (selects the API service)',
+        (tester) async {
+      await pumpRegisterRouteAs(tester, AppEnvironment.development);
+
+      expect(find.byType(CreateAccountScreen), findsOneWidget);
+      expect(find.byType(RegisterPlaceholderScreen), findsNothing);
+    });
+
+    testWidgets('PRODUCTION mode also shows the real Create Account screen', (tester) async {
+      await pumpRegisterRouteAs(tester, AppEnvironment.production);
+
+      expect(find.byType(CreateAccountScreen), findsOneWidget);
     });
   });
 }

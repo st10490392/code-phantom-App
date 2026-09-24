@@ -144,6 +144,23 @@ class MockAuthService implements AuthService {
     // Mock: always "succeeds" without sending anything real.
   }
 
+  @override
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) async {
+    // Self-service registration is an API-mode feature — MOCK mode's fixed
+    // account list (above) has no signup path, and the login screen only
+    // ever routes to this in DEVELOPMENT/PRODUCTION (see `app_router.dart`).
+    throw const AuthException('Self-service registration is not available in MOCK mode.');
+  }
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) async {
+    throw const AuthException('Email verification is not available in MOCK mode.');
+  }
+
   AuthSession _sessionFor(AuthUser user) => AuthSession(
         user: user,
         accessToken: 'mock-access-token.${user.id}',

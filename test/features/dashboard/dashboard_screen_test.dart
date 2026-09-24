@@ -97,4 +97,27 @@ void main() {
 
     expect(find.text('Notifications'), findsOneWidget);
   });
+
+  testWidgets(
+    'a new CLIENT with zero permissions gets the onboarding state, not a blank/admin dashboard',
+    (tester) async {
+      const newClient = AuthUser(
+        id: 'u_client',
+        email: 'new.client@codephantom.dev',
+        displayName: 'New Client',
+        role: AppRole.client,
+        permissions: PermissionSet.none,
+      );
+
+      await pumpDashboardAs(tester, newClient);
+
+      expect(find.text('Welcome to CodePhantom'), findsOneWidget);
+      expect(find.text('Your account is active.'), findsOneWidget);
+      expect(find.text('No services are enabled on your account yet.'), findsOneWidget);
+      expect(find.text(_scanner), findsNothing);
+      expect(find.text(_signals), findsNothing);
+      expect(find.text(_ea), findsNothing);
+      expect(find.text(_clients), findsNothing);
+    },
+  );
 }

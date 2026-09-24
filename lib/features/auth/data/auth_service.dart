@@ -19,6 +19,26 @@ abstract class AuthService {
   Future<AuthSession?> restoreSession();
 
   Future<void> requestPasswordReset({required String email});
+
+  /// Self-service sign-up. Role/permissions are never chosen by the caller —
+  /// the backend assigns the new account's role (starting this milestone,
+  /// always `CLIENT` with zero entitlements) server-side.
+  ///
+  /// Deliberately returns nothing to persist: a new account requires email
+  /// verification before it can sign in, so this must never establish a
+  /// local session or store a token, even if a response happened to include
+  /// one.
+  Future<void> register({
+    required String displayName,
+    required String email,
+    required String password,
+  });
+
+  /// Re-sends the verification email for an account that registered but
+  /// hasn't confirmed yet. Always resolves the same way regardless of
+  /// whether the email is registered/already verified, to avoid account
+  /// enumeration — same convention as [requestPasswordReset].
+  Future<void> resendVerificationEmail({required String email});
 }
 
 /// `MockAuthService`'s own error type, folded into the same [AppException]

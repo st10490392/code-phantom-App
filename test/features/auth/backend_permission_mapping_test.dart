@@ -60,6 +60,13 @@ void main() {
     test('an empty or unrecognized role list falls back to INTERNAL', () {
       expect(primaryRoleFromBackendCodes(const []), AppRole.internal);
     });
+
+    test('CLIENT maps directly to AppRole.client, never to INTERNAL', () {
+      expect(primaryRoleFromBackendCodes(const ['CLIENT']), AppRole.client);
+      expect(AppRole.fromWire('CLIENT'), AppRole.client);
+      expect(AppRole.client.wireValue, 'CLIENT');
+      expect(AppRole.client.label, 'Client');
+    });
   });
 
   group('authUserFromApiProfile', () {
@@ -93,6 +100,17 @@ void main() {
       });
       expect(user.displayName, 'x@y.com');
     });
+
+    test('a new CLIENT with zero permissions maps to AppRole.client, not INTERNAL', () {
+      final user = authUserFromApiProfile({
+        'profile': {'id': 'u4', 'email': 'new.client@codephantom.dev', 'status': 'ACTIVE', 'protected': false},
+        'roles': const ['CLIENT'],
+        'permissions': const <String>[],
+      });
+      expect(user.role, AppRole.client);
+      expect(user.isOwner, isFalse);
+      expect(user.permissions.granted, isEmpty);
+    });
   });
 
   group('navigation built from real server-style permission responses', () {
@@ -119,6 +137,18 @@ void main() {
       expect(visible.contains('/clients'), isFalse);
       expect(visible.contains('/licences'), isFalse);
       expect(visible.contains('/ea'), isFalse);
+    });
+
+    test('a new CLIENT with zero permissions sees only the always-open destinations', () {
+      final client = authUserFromApiProfile({
+        'profile': {'id': 'u4', 'email': 'new.client@codephantom.dev', 'status': 'ACTIVE', 'protected': false},
+        'roles': const ['CLIENT'],
+        'permissions': const <String>[],
+      });
+
+      final visible = visibleNavDestinationsFor(client).map((d) => d.path).toSet();
+      expect(visible, {'/dashboard', '/notifications', '/settings'},
+          reason: 'no OWNER shortcut, no admin nav, no paid-service module access',);
     });
   });
 }
