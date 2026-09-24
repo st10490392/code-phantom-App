@@ -20,7 +20,6 @@ dependencies:
   go_router: ^14.2.0
 
   # Design system
-  google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
 
   # Storage (tokens must never sit in plain shared_preferences)
@@ -53,6 +52,26 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/
+  # Bundled locally instead of fetched at runtime via `google_fonts` — see
+  # `core/theme/app_typography.dart`'s class doc for why. Only the weights
+  # the app actually uses are included.
+  fonts:
+    - family: Space Grotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
 
 # Generates android/ + ios/ launcher icons from the official CodePhantom
 # mark. `assets/brand/icon_foreground.png` is the same mark shrunk to 66%

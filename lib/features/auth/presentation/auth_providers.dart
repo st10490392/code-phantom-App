@@ -6,6 +6,7 @@ import '../../../core/network/app_exceptions.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/utilities/startup_trace.dart';
 import '../data/api_auth_service.dart';
 import '../data/auth_service.dart';
 import '../data/mock_auth_service.dart';
@@ -79,7 +80,10 @@ class AuthController extends StateNotifier<AuthState> {
   final AuthService _authService;
 
   Future<void> _restore() async {
-    final session = await _authService.restoreSession();
+    // Whole splash-to-first-screen gate, end to end — see
+    // `ApiAuthService.restoreSession` for the finer-grained breakdown
+    // (secure-storage reads vs. the `/me` network call) when this is slow.
+    final session = await traceStartup('AuthController._restore', _authService.restoreSession);
     state = session != null
         ? AuthState(status: AuthStatus.authenticated, session: session)
         : const AuthState(status: AuthStatus.unauthenticated);

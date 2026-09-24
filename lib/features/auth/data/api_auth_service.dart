@@ -1,6 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/utilities/startup_trace.dart';
 import '../domain/auth_session.dart';
 import '../domain/auth_user.dart';
 import 'auth_service.dart';
@@ -72,17 +73,60 @@ class ApiAuthService implements AuthService {
   @override
   Future<AuthSession?> restoreSession() async {
     try {
-      if (!await _tokenStorage.hasStoredSession()) return null;
-      final accessToken = await _validAccessToken();
-      final user = await _fetchProfile();
-      final refreshToken = await _tokenStorage.readRefreshToken();
-      final expiresAt = await _tokenStorage.readExpiresAt() ??
-          DateTime.now().add(const Duration(minutes: 5));
+      // Startup performance note: this used to read the access token twice
+      // (once via `hasStoredSession()`, again inside the old
+      // `_validAccessToken()` helper) and the expiry twice, all
+      // sequentially — 5 secure-storage round trips before the network
+      // call even started. Each is its own platform-channel call into
+      // Android's Keystore-backed EncryptedSharedPreferences, which is
+      // measurably slow on low-end/older hardware. This reads each key
+      // exactly once, and fetches the two that are always needed together
+      // (expiry + refresh token) in parallel instead of one after another.
+      final accessToken = await traceStartup(
+        'restoreSession: read access token',
+        _tokenStorage.readAccessToken,
+      );
+      if (accessToken == null) return null;
+
+      final stored = await traceStartup(
+        'restoreSession: read expiry + refresh token (parallel)',
+        () => Future.wait([
+          _tokenStorage.readExpiresAt(),
+          _tokenStorage.readRefreshToken(),
+        ]),
+      );
+      final expiresAt = stored[0] as DateTime?;
+      var refreshToken = stored[1] as String?;
+
+      final stillValid = expiresAt != null &&
+          expiresAt.isAfter(DateTime.now().add(const Duration(seconds: 30)));
+
+      String accessTokenToUse;
+      DateTime sessionExpiresAt;
+      if (stillValid) {
+        accessTokenToUse = accessToken;
+        sessionExpiresAt = expiresAt;
+      } else {
+        // Refresh persists new access/refresh/expiry values, so — unlike
+        // the read above — these two must be re-read afterwards; they did
+        // just change.
+        accessTokenToUse = await traceStartup('restoreSession: refresh access token', _refresh);
+        refreshToken = await _tokenStorage.readRefreshToken();
+        sessionExpiresAt = await _tokenStorage.readExpiresAt() ??
+            DateTime.now().add(const Duration(minutes: 5));
+      }
+
+      // Server-authoritative: the session is never considered restored
+      // until `/me` actually answers with this user's real roles and
+      // permissions — nothing above is shown as an authenticated session
+      // on its own.
+      final user = await traceStartup('restoreSession: GET /me', _fetchProfile);
+
       return AuthSession(
         user: user,
-        accessToken: accessToken,
+        accessToken: accessTokenToUse,
         refreshToken: refreshToken,
-        expiresAt: expiresAt,
+        expiresAt: sessionExpiresAt,
       );
     } on NetworkException {
       // Transient — the backend may just be briefly unreachable. Keep the
@@ -140,21 +184,6 @@ class ApiAuthService implements AuthService {
       requiresAuth: false,
       body: {'email': email},
     );
-  }
-
-  /// Returns a still-valid access token, refreshing first if the stored one
-  /// is missing or within 30 seconds of expiry. Throws [SessionExpiredException]
-  /// if there is nothing to restore or the refresh itself fails.
-  Future<String> _validAccessToken() async {
-    final accessToken = await _tokenStorage.readAccessToken();
-    if (accessToken == null) throw const SessionExpiredException();
-
-    final expiresAt = await _tokenStorage.readExpiresAt();
-    final stillValid =
-        expiresAt != null && expiresAt.isAfter(DateTime.now().add(const Duration(seconds: 30)));
-    if (stillValid) return accessToken;
-
-    return _refresh();
   }
 
   Future<String> _refresh() {

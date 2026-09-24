@@ -422,7 +422,65 @@ only.
   explicitly in code comments on `PermissionGate` so nobody mistakes it for
   real authorization later.
 
-## 9. Explicit seams for later phases
+## 9. Startup performance
+
+Audited after a real low-end/older Android tablet took roughly two minutes
+to become usable after launch. Findings and fixes:
+
+- **Runtime Google Fonts fetching (primary cause).** `AppTypography` used
+  to build its `TextTheme` with `package:google_fonts`'s `GoogleFonts.xxx()`
+  calls. That package fetches each font family/weight over the network the
+  first time it's used (with no built-in timeout), caching it locally only
+  after a successful fetch. On a slow or offline connection, those requests
+  can each hang for a long time — this is the leading suspect for a
+  multi-minute cold start, not the device's CPU. Fixed by bundling the five
+  weights the app actually uses as local assets (`assets/fonts/`, declared
+  in `pubspec.yaml`'s `fonts:` section) and switching `AppTypography` to
+  plain `TextStyle(fontFamily: ...)`. The `google_fonts` package (and its
+  transitive `http` dependency) has been removed entirely — there is no
+  code path left that can attempt a font download.
+- **Redundant secure-storage reads on every restore.**
+  `ApiAuthService.restoreSession()` read the access token twice (once via
+  `TokenStorage.hasStoredSession()`, again to check its expiry) and the
+  token expiry twice, sequentially — 5 secure-storage round trips before
+  the `/me` network call even started. Each is its own platform-channel
+  call into Android's Keystore-backed `EncryptedSharedPreferences`, which
+  is measurably slower on low-end/older hardware than on a modern device.
+  Fixed by reading each key exactly once and fetching the expiry + refresh
+  token in parallel (`Future.wait`) instead of one after another.
+- **Theme built twice per app rebuild.** `CodePhantomApp` called
+  `AppTheme.dark()` separately for both `theme:` and `darkTheme:`, even
+  though `themeMode` is pinned to `ThemeMode.dark` and the `theme:` slot is
+  never actually rendered. Fixed by building it once and reusing the same
+  `ThemeData` for both.
+- **Image asset decoding — checked, not a meaningful factor.** The brand
+  PNGs are modest (512×512 or smaller); decoding them is not a plausible
+  contributor to a multi-minute delay.
+- **Provider/router initialization — checked, not a meaningful factor.**
+  `authServiceProvider`'s own dependencies (`appEnvironmentProvider`,
+  `apiClientProvider`, `tokenStorageProvider`) never change after creation
+  in production code, so `authControllerProvider` — and therefore
+  `AuthController._restore()` and its one `/me` call — only runs once per
+  app launch; there is no repeated-initialization loop re-running
+  restoration.
+- **Splash screen itself is not the bottleneck.** It renders a static
+  image and watches `authControllerProvider` purely to know when to let
+  the router redirect away — the delay was always in what it's waiting on
+  (fonts, then storage/network), not the splash widget's own work. No
+  changes were needed there beyond fixing what it waits on.
+
+Debug-only timing (`core/utilities/startup_trace.dart`, a no-op outside
+`kDebugMode`) now logs elapsed time for each stage —
+`AuthController._restore` overall, and inside `ApiAuthService.restoreSession`
+individually for the access-token read, the expiry+refresh-token read, an
+in-progress refresh, and the `/me` call — so a slow stage on a real device
+shows up directly in `flutter run` console output.
+
+None of this touches the authentication contract: a session is still only
+considered restored after `/me` answers with the server's own roles and
+permissions, and OWNER/client UI is never shown before that completes.
+
+## 10. Explicit seams for later phases
 
 - `AuthService`, every module service, and `SignalPublisherService` are pure
   interfaces — Phase 2 adds `Dio`-based implementations behind the same
@@ -433,7 +491,7 @@ only.
   FCM later means feeding the same stream from a push payload instead of a
   mock timer, with no presentation-layer changes.
 
-## 10. Milestones (git history)
+## 11. Milestones (git history)
 
 1. Project foundation (pubspec, lint rules, folder skeleton, CI-friendly structure)
 2. Theme + navigation shell

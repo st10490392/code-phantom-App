@@ -10,12 +10,17 @@ class CodePhantomApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    // Built once and reused for both slots below — `themeMode` is pinned to
+    // dark, so `theme` (the light-mode slot) is never actually rendered,
+    // but MaterialApp still requires it, and building a second, identical
+    // ThemeData for it on every rebuild is pure waste.
+    final theme = AppTheme.dark();
 
     return MaterialApp.router(
       title: BrandAssets.companyFullName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
-      darkTheme: AppTheme.dark(),
+      theme: theme,
+      darkTheme: theme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
     );
