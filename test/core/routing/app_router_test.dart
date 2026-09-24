@@ -42,6 +42,7 @@ class _FixedAuthService implements AuthService {
   @override
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   }) =>
@@ -70,6 +71,7 @@ class _UnauthenticatedAuthService implements AuthService {
   @override
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   }) =>
