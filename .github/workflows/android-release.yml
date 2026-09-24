@@ -104,14 +104,29 @@ jobs:
           flutter build appbundle $common
           flutter build apk $common
 
-      - name: Refuse debug-signed output
+      - name: Refuse unsigned or debug-signed output
         run: |
           apk=build/app/outputs/flutter-apk/app-release.apk
-          owner=$(keytool -printcert -jarfile "$apk" | grep -m1 "Owner:" || true)
-          echo "APK signer: $owner"
-          if [ -z "$owner" ] || echo "$owner" | grep -q "CN=Android Debug"; then
-            echo "::error::Release APK is unsigned or debug-signed"; exit 1
+          apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          if [ -z "$apksigner" ]; then
+            echo "::error::Android apksigner was not found in the SDK"; exit 1
           fi
+
+          verify_output=$("$apksigner" verify --verbose --print-certs "$apk" 2>&1) || {
+            echo "$verify_output"
+            echo "::error::Release APK signature verification failed"; exit 1
+          }
+          echo "$verify_output"
+
+          signer_dn=$(printf '%s\n' "$verify_output" | sed -n 's/^Signer #1 certificate DN: //p' | head -n 1)
+          echo "APK signer: $signer_dn"
+          if [ -z "$signer_dn" ]; then
+            echo "::error::Release APK signer certificate was not found"; exit 1
+          fi
+          if echo "$signer_dn" | grep -qi "CN=Android Debug"; then
+            echo "::error::Release APK is debug-signed"; exit 1
+          fi
+
           sha256sum build/app/outputs/bundle/release/app-release.aab "$apk" | tee SHA256SUMS.txt
 
       - name: Remove signing material
