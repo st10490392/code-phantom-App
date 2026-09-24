@@ -161,10 +161,13 @@ void main() {
     expect(service.registerCalls, 0);
   });
 
-  testWidgets('a generic registration rejection (e.g. email already registered) shows the typed message',
+  testWidgets(
+      'a genuine backend registration rejection (e.g. a Supabase-side password policy '
+      'rejection, distinct from this screen\'s own 12-character check) shows the typed message '
+      '— a duplicate email is NOT such a rejection; see api_auth_service_test.dart',
       (tester) async {
     final service = _FakeAuthService(
-      registerError: const ValidationException('An account with that email already exists.'),
+      registerError: const ValidationException('Could not register this account.'),
     );
     await pumpCreateAccount(tester, service);
 
@@ -173,7 +176,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('An account with that email already exists.'), findsOneWidget);
+    expect(find.text('Could not register this account.'), findsOneWidget);
     expect(find.text('verify:new.client@codephantom.dev'), findsNothing);
   });
 

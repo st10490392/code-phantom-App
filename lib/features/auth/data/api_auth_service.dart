@@ -13,14 +13,20 @@ import 'backend_permission_mapping.dart';
 /// `/auth/password-reset/request`, `GET /me`, `POST /auth/register`,
 /// `POST /auth/verification/resend`).
 ///
-/// `register`/`resendVerificationEmail` follow the same request/response
-/// shape as the existing password-reset endpoints (snake_case body, a
-/// generic `{ data: { message } }` success envelope, no account-existence
-/// signal in the response) — the CodePhantom backend doesn't expose these
-/// two routes yet as of this milestone (see the "next backend milestone"
-/// note in the mobile app's own history), so this is the anticipated
-/// contract the mobile client is built against, ready to activate the
-/// moment the backend ships it.
+/// `register`/`resendVerificationEmail` match the backend's registration/
+/// verification milestone exactly: `POST /auth/register` takes
+/// `{ email, password, display_name }` (password minimum 12 characters,
+/// enforced both client- and server-side) and always responds 202 with a
+/// generic `{ data: { message } }`, even when the email is already
+/// registered — the backend deliberately never reveals that distinction
+/// (anti-enumeration), so this client has no special case for it either; a
+/// "duplicate" registration attempt looks exactly like a fresh one and
+/// still routes to the verification screen. `POST /auth/verification/resend`
+/// takes `{ email }` and is equally generic. A login attempt against an
+/// unverified account gets a 403 distinguished from a suspended/disabled
+/// account by message text (see `dio_error_mapper.dart`'s
+/// `_isEmailNotVerified`), since the backend does not yet send a separate
+/// machine-readable error code for it.
 ///
 /// Startup restoration (`restoreSession`) does exactly what the milestone
 /// asks: inspect the stored session, refresh if the access token looks

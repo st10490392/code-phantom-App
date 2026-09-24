@@ -134,27 +134,63 @@ void main() {
       );
     });
 
-    test('a 403 with code EMAIL_NOT_VERIFIED surfaces as EmailNotVerifiedException', () async {
-      final b = _build();
-      b.mock(
-        'POST',
-        '/auth/login',
-        (_) => const FakeResponse(
-          statusCode: 403,
-          body: {
-            'error': {
-              'code': 'EMAIL_NOT_VERIFIED',
-              'message': 'Please verify your email before signing in.',
+    test(
+      'an unverified account (403, real backend shape: code FORBIDDEN, message-based) '
+      'surfaces as EmailNotVerifiedException',
+      () async {
+        final b = _build();
+        // Exact shape the real backend sends as of the registration/
+        // verification milestone (src/modules/auth/service.ts): there is no
+        // distinct machine-readable code for this — code is the same
+        // generic FORBIDDEN used for a suspended/disabled account — only
+        // the message text distinguishes it.
+        b.mock(
+          'POST',
+          '/auth/login',
+          (_) => const FakeResponse(
+            statusCode: 403,
+            body: {
+              'error': {
+                'code': 'FORBIDDEN',
+                'message':
+                    'Please verify your email address before signing in. Check your inbox for '
+                    'the confirmation link, or request a new one via POST /auth/verification/resend.',
+              },
             },
-          },
-        ),
-      );
+          ),
+        );
 
-      await expectLater(
-        b.service.login(email: 'new.client@codephantom.dev', password: 'correct-horse'),
-        throwsA(isA<EmailNotVerifiedException>()),
-      );
-    });
+        await expectLater(
+          b.service.login(email: 'new.client@codephantom.dev', password: 'correct-horse'),
+          throwsA(isA<EmailNotVerifiedException>()),
+        );
+      },
+    );
+
+    test(
+      'a future backend adding a distinct EMAIL_NOT_VERIFIED code is still recognized',
+      () async {
+        final b = _build();
+        b.mock(
+          'POST',
+          '/auth/login',
+          (_) => const FakeResponse(
+            statusCode: 403,
+            body: {
+              'error': {
+                'code': 'EMAIL_NOT_VERIFIED',
+                'message': 'Please verify your email before signing in.',
+              },
+            },
+          ),
+        );
+
+        await expectLater(
+          b.service.login(email: 'new.client@codephantom.dev', password: 'correct-horse'),
+          throwsA(isA<EmailNotVerifiedException>()),
+        );
+      },
+    );
 
     test('a network failure throws NetworkException', () async {
       final b = _build();
@@ -359,28 +395,38 @@ void main() {
           reason: 'registration must never establish a local session — email verification is required first',);
     });
 
-    test('an email already registered (409) surfaces as ValidationException', () async {
-      final b = _build();
-      b.mock(
-        'POST',
-        '/auth/register',
-        (_) => const FakeResponse(
-          statusCode: 409,
-          body: {
-            'error': {'code': 'CONFLICT', 'message': 'An account with that email already exists.'},
-          },
-        ),
-      );
+    test(
+      'registering an already-registered email succeeds identically (real backend '
+      'anti-enumeration: always 202, never a distinguishable conflict)',
+      () async {
+        final b = _build();
+        b.mock(
+          'POST',
+          '/auth/register',
+          (_) => const FakeResponse(
+            statusCode: 202,
+            body: {
+              'data': {
+                'message':
+                    'Registration received. Check your email to verify your account, then sign '
+                    'in with POST /auth/login. You will not have a usable session until you verify.',
+              },
+            },
+          ),
+        );
 
-      await expectLater(
-        b.service.register(
+        // Same call, same outcome, whether or not this email already has an
+        // account — the client has no special case for it because the
+        // backend deliberately gives it nothing to branch on.
+        await b.service.register(
           displayName: 'New Client',
           email: 'owner@codephantom.dev',
           password: 'a-strong-password-123',
-        ),
-        throwsA(isA<ValidationException>()),
-      );
-    });
+        );
+
+        expect(await b.tokenStorage.hasStoredSession(), isFalse);
+      },
+    );
 
     test('a weak password rejected by the backend (400) surfaces as ValidationException', () async {
       final b = _build();
