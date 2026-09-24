@@ -118,7 +118,7 @@ jobs:
           }
           echo "$verify_output"
 
-          signer_dn=$(printf '%s\n' "$verify_output" | sed -n 's/^Signer #1 certificate DN: //p' | head -n 1)
+          signer_dn=$(printf '%s\n' "$verify_output" | sed -n 's/^.*certificate DN: //p' | head -n 1)
           echo "APK signer: $signer_dn"
           if [ -z "$signer_dn" ]; then
             echo "::error::Release APK signer certificate was not found"; exit 1
