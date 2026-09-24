@@ -422,6 +422,7 @@ void main() {
         // backend deliberately gives it nothing to branch on.
         await b.service.register(
           displayName: 'New Client',
+          username: 'new_client',
           email: 'owner@codephantom.dev',
           password: 'a-strong-password-123',
         );
@@ -446,6 +447,7 @@ void main() {
       await expectLater(
         b.service.register(
           displayName: 'New Client',
+          username: 'new_client',
           email: 'weak.pw@codephantom.dev',
           password: 'a-strong-password-123',
         ),
@@ -460,6 +462,7 @@ void main() {
       await expectLater(
         b.service.register(
           displayName: 'New Client',
+          username: 'new_client',
           email: 'new.client@codephantom.dev',
           password: 'a-strong-password-123',
         ),
@@ -483,6 +486,7 @@ void main() {
       await expectLater(
         b.service.register(
           displayName: 'New Client',
+          username: 'new_client',
           email: 'new.client@codephantom.dev',
           password: 'a-strong-password-123',
         ),
