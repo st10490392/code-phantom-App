@@ -64,3 +64,15 @@ final class ValidationException extends AppException {
   /// for callers that want field-level messages. Never shown raw to a user.
   final Map<String, dynamic>? details;
 }
+
+/// 429 / `RATE_LIMITED` — the caller has been rate-limited. Currently only
+/// reachable from `POST /auth/register` and `POST /auth/verification/resend`
+/// (5 requests per 15 minutes each, stacked on top of the global limiter —
+/// see the backend's `publicAuthRateLimiter`), since those are the two
+/// unauthenticated endpoints a script could hammer to mass-create accounts
+/// or email-bomb a victim with verification resends. Distinguished from
+/// [ServerException] so a caller can show "try again in a few minutes"
+/// rather than implying the backend itself is broken.
+final class RateLimitedException extends AppException {
+  const RateLimitedException([super.message = 'Too many requests. Please try again later.']);
+}

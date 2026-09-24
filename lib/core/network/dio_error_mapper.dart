@@ -45,6 +45,12 @@ AppException mapDioException(DioException error) {
         : AuthorizationException(
             backendMessage ?? 'You do not have permission to perform this action.',
           ),
+    // Currently only register/verification-resend carry the stricter
+    // per-route limiter that can produce this (see RateLimitedException's
+    // class doc) — mapped by status alone, since the backend's
+    // express-rate-limit default response already sends `code:
+    // "RATE_LIMITED"`, but nothing here depends on that code matching.
+    429 => RateLimitedException(backendMessage ?? 'Too many requests. Please try again later.'),
     >= 500 => ServerException(backendMessage ?? 'Server error. Please try again later.'),
     _ => ServerException(backendMessage ?? 'Something went wrong. Please try again.'),
   };

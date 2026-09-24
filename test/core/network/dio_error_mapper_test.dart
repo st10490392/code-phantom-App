@@ -56,5 +56,15 @@ void main() {
 
       expect(mapDioException(error), isA<EmailNotVerifiedException>());
     });
+
+    test('a 429 (register/resend rate limit) is RateLimitedException, not ServerException', () {
+      final error = _badResponse(429, {
+        'error': {'code': 'RATE_LIMITED', 'message': 'Too many requests. Please try again later.'},
+      });
+
+      final mapped = mapDioException(error);
+      expect(mapped, isA<RateLimitedException>());
+      expect(mapped.message, 'Too many requests. Please try again later.');
+    });
   });
 }

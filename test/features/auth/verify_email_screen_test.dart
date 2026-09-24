@@ -120,6 +120,20 @@ void main() {
         reason: 'a failed resend must not start a cooldown — the user should be able to retry',);
   });
 
+  testWidgets('a rate-limited resend shows the backend\'s own message, not a generic server error',
+      (tester) async {
+    final service = _FakeAuthService(
+      resendError: const RateLimitedException('Too many requests. Please try again later.'),
+    );
+    await pumpVerifyEmail(tester, service);
+
+    await tester.tap(find.text('Resend verification email'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Too many requests. Please try again later.'), findsOneWidget);
+  });
+
   testWidgets('does not fake or auto-mark verification locally', (tester) async {
     final service = _FakeAuthService();
     await pumpVerifyEmail(tester, service);

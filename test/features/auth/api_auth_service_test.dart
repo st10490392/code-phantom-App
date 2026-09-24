@@ -464,6 +464,29 @@ void main() {
         throwsA(isA<NetworkException>()),
       );
     });
+
+    test('the route-specific rate limit (429) surfaces as RateLimitedException', () async {
+      final b = _build();
+      b.mock(
+        'POST',
+        '/auth/register',
+        (_) => const FakeResponse(
+          statusCode: 429,
+          body: {
+            'error': {'code': 'RATE_LIMITED', 'message': 'Too many requests. Please try again later.'},
+          },
+        ),
+      );
+
+      await expectLater(
+        b.service.register(
+          displayName: 'New Client',
+          email: 'new.client@codephantom.dev',
+          password: 'a-strong-password-123',
+        ),
+        throwsA(isA<RateLimitedException>()),
+      );
+    });
   });
 
   group('ApiAuthService.resendVerificationEmail', () {
@@ -492,6 +515,25 @@ void main() {
       await expectLater(
         b.service.resendVerificationEmail(email: 'new.client@codephantom.dev'),
         throwsA(isA<NetworkException>()),
+      );
+    });
+
+    test('the route-specific rate limit (429) surfaces as RateLimitedException', () async {
+      final b = _build();
+      b.mock(
+        'POST',
+        '/auth/verification/resend',
+        (_) => const FakeResponse(
+          statusCode: 429,
+          body: {
+            'error': {'code': 'RATE_LIMITED', 'message': 'Too many requests. Please try again later.'},
+          },
+        ),
+      );
+
+      await expectLater(
+        b.service.resendVerificationEmail(email: 'new.client@codephantom.dev'),
+        throwsA(isA<RateLimitedException>()),
       );
     });
   });
