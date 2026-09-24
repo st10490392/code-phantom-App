@@ -20,7 +20,8 @@ abstract class AuthService {
 
   Future<void> requestPasswordReset({required String email});
 
-  /// Self-service sign-up. Role/permissions are never chosen by the caller —
+  /// Self-service sign-up. A unique username is required by the backend;
+  /// role/permissions are never chosen by the caller —
   /// the backend assigns the new account's role (starting this milestone,
   /// always `CLIENT` with zero entitlements) server-side.
   ///
@@ -30,6 +31,7 @@ abstract class AuthService {
   /// one.
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   });

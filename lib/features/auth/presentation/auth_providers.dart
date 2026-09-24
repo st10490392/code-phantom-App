@@ -115,10 +115,16 @@ class AuthController extends StateNotifier<AuthState> {
   /// caller (the Create Account screen) as-is.
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   }) =>
-      _authService.register(displayName: displayName, email: email, password: password);
+      _authService.register(
+        displayName: displayName,
+        username: username,
+        email: email,
+        password: password,
+      );
 
   Future<void> resendVerificationEmail(String email) =>
       _authService.resendVerificationEmail(email: email);

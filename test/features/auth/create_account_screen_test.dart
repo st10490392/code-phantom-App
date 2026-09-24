@@ -16,17 +16,20 @@ class _FakeAuthService implements AuthService {
   final AppException? registerError;
   int registerCalls = 0;
   String? lastDisplayName;
+  String? lastUsername;
   String? lastEmail;
   String? lastPassword;
 
   @override
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   }) async {
     registerCalls++;
     lastDisplayName = displayName;
+    lastUsername = username;
     lastEmail = email;
     lastPassword = password;
     if (registerError != null) throw registerError!;
@@ -84,11 +87,13 @@ void main() {
   Future<void> fillForm(
     WidgetTester tester, {
     String name = 'New Client',
+    String username = 'new_client',
     String email = 'new.client@codephantom.dev',
     String password = 'a-strong-password-123',
     String? confirmPassword,
   }) async {
     await tester.enterText(find.widgetWithText(TextFormField, 'Display name'), name);
+    await tester.enterText(find.widgetWithText(TextFormField, 'Username'), username);
     await tester.enterText(find.widgetWithText(TextFormField, 'Email'), email);
     await tester.enterText(find.widgetWithText(TextFormField, 'Password'), password);
     await tester.enterText(
@@ -109,8 +114,38 @@ void main() {
 
     expect(service.registerCalls, 1);
     expect(service.lastDisplayName, 'New Client');
+    expect(service.lastUsername, 'new_client');
     expect(service.lastEmail, 'new.client@codephantom.dev');
     expect(find.text('verify:new.client@codephantom.dev'), findsOneWidget);
+  });
+
+
+  testWidgets('an invalid username is rejected before any network call is made', (tester) async {
+    final service = _FakeAuthService();
+    await pumpCreateAccount(tester, service);
+
+    await fillForm(tester, username: '_bad_username_');
+    await tester.tap(find.text('Create account').last);
+    await tester.pump();
+
+    expect(
+      find.text('Use 3–30 letters, numbers, or _; start and end with a letter or number'),
+      findsOneWidget,
+    );
+    expect(service.registerCalls, 0);
+  });
+
+  testWidgets('username is normalized to lower-case before submission', (tester) async {
+    final service = _FakeAuthService();
+    await pumpCreateAccount(tester, service);
+
+    await fillForm(tester, username: 'New_Client');
+    await tester.tap(find.text('Create account').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(service.registerCalls, 1);
+    expect(service.lastUsername, 'new_client');
   });
 
   testWidgets('an invalid email is rejected before any network call is made', (tester) async {

@@ -2,7 +2,7 @@ name: Flutter CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, codephantom-app-dev-qn0faw]
   pull_request:
 
 permissions:

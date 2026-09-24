@@ -15,7 +15,7 @@ import 'backend_permission_mapping.dart';
 ///
 /// `register`/`resendVerificationEmail` match the backend's registration/
 /// verification milestone exactly: `POST /auth/register` takes
-/// `{ email, password, display_name }` (password minimum 12 characters,
+/// `{ email, username, password, display_name }` (password minimum 12 characters,
 /// enforced both client- and server-side) and always responds 202 with a
 /// generic `{ data: { message } }`, even when the email is already
 /// registered — the backend deliberately never reveals that distinction
@@ -164,6 +164,7 @@ class ApiAuthService implements AuthService {
   @override
   Future<void> register({
     required String displayName,
+    required String username,
     required String email,
     required String password,
   }) async {
@@ -177,6 +178,7 @@ class ApiAuthService implements AuthService {
       requiresAuth: false,
       body: {
         'display_name': displayName,
+        'username': username,
         'email': email,
         'password': password,
       },

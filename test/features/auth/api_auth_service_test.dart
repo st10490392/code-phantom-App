@@ -367,7 +367,7 @@ void main() {
   });
 
   group('ApiAuthService.register', () {
-    test('posts display name/email/password and never stores a session', () async {
+    test('posts display name/username/email/password and never stores a session', () async {
       final b = _build();
       Map<String, dynamic>? sentBody;
       b.mock('POST', '/auth/register', (options) {
@@ -382,12 +382,14 @@ void main() {
 
       await b.service.register(
         displayName: 'New Client',
+        username: 'new_client',
         email: 'new.client@codephantom.dev',
         password: 'a-strong-password-123',
       );
 
       expect(sentBody, {
         'display_name': 'New Client',
+        'username': 'new_client',
         'email': 'new.client@codephantom.dev',
         'password': 'a-strong-password-123',
       });
