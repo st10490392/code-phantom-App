@@ -15,11 +15,6 @@ name: Android release
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: Target backend environment
-        type: choice
-        options: [staging, production]
-        default: staging
       build_name:
         description: "Version name (e.g. 0.2.0). Empty = pubspec version."
         required: false
@@ -36,8 +31,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # Tag pushes build production; manual runs build the chosen environment.
-    environment: ${{ github.event_name == 'push' && 'production' || inputs.environment }}
+    # Production is tag-only; manual runs are staging-only. This prevents
+    # accidental production APKs even when environment reviewers are unavailable.
+    environment: ${{ github.event_name == 'push' && 'production' || 'staging' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +120,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: codephantom-android-${{ github.event_name == 'push' && 'production' || inputs.environment }}-${{ github.run_number }}
+          name: codephantom-android-${{ github.event_name == 'push' && 'production' || 'staging' }}-${{ github.run_number }}
           path: |
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/flutter-apk/app-release.apk
