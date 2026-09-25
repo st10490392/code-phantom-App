@@ -15,7 +15,7 @@ class ApiScannerService implements ScannerService {
           status == SetupStatus.approved ||
           status == SetupStatus.rejected)
         'status': status!.wireValue,
-    });
+    },);
     final rows = response['data'] as List<dynamic>;
     final setups = rows.map((row) => _decode(row as Map<String, dynamic>)).toList();
     return status == null ? setups : setups.where((s) => s.status == status).toList();
