@@ -30,7 +30,7 @@ class EADashboardScreen extends ConsumerWidget {
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),
         data: (account) => account == null
             ? const EmptyView(icon: Icons.monitor_heart_outlined,
-                message: 'No EA account connected yet.')
+                message: 'No EA account connected yet.',)
             : ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
