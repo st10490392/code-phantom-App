@@ -15,7 +15,7 @@ class ApiSignalService implements SignalService {
       'limit': 200,
       if (status != null && status != SignalStatus.pending)
         'status': status.wireValue,
-    });
+    },);
     final rows = response['data'] as List<dynamic>;
     final signals = rows.map((row) => _decode(row as Map<String, dynamic>)).toList();
     return status == null ? signals : signals.where((s) => s.status == status).toList();
