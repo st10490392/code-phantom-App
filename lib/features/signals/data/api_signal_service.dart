@@ -65,7 +65,7 @@ class ApiSignalService implements SignalService {
         takeProfits: (row['take_profits'] as List<dynamic>? ?? const [])
             .map(_number).toList(),
         status: SignalStatus.fromWire(row['status'] as String),
-        session: TradingSession.overlap,
+        session: TradingSession.unknown,
         openedAt: DateTime.parse(row['created_at'] as String),
         closedAt: row['closed_at'] == null
             ? null : DateTime.parse(row['closed_at'] as String),
