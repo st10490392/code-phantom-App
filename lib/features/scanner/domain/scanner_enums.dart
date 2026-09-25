@@ -28,20 +28,23 @@ enum TradingSession {
   asia,
   london,
   newYork,
-  overlap;
+  overlap,
+  unknown;
 
   String get wireValue => switch (this) {
         TradingSession.asia => 'ASIA',
         TradingSession.london => 'LONDON',
         TradingSession.newYork => 'NEW_YORK',
         TradingSession.overlap => 'OVERLAP',
+        TradingSession.unknown => 'UNKNOWN',
       };
 
   static TradingSession fromWire(String v) => switch (v) {
         'ASIA' => TradingSession.asia,
         'LONDON' => TradingSession.london,
         'NEW_YORK' => TradingSession.newYork,
-        _ => TradingSession.overlap,
+        'OVERLAP' => TradingSession.overlap,
+        _ => TradingSession.unknown,
       };
 }
 
