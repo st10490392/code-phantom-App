@@ -46,15 +46,17 @@ class ApiScannerService implements ScannerService {
   Future<ScannerSetup> update(ScannerSetup setup) =>
       Future.error(StateError('Scanner review is paused until backtests pass.'));
 
+  double _number(Object? value) => value is num ? value.toDouble() : double.parse(value as String);
+
   ScannerSetup _decode(Map<String, dynamic> row) => ScannerSetup(
         id: row['id'] as String,
         symbol: row['symbol'] as String,
         timeframe: row['timeframe'] as String,
         direction: SetupDirection.fromWire(row['direction'] as String),
-        entry: (row['entry'] as num).toDouble(),
-        stopLoss: (row['stop_loss'] as num).toDouble(),
+        entry: _number(row['entry']),
+        stopLoss: _number(row['stop_loss']),
         takeProfits: (row['take_profits'] as List<dynamic>? ?? const [])
-            .map((value) => (value as num).toDouble()).toList(),
+            .map((value) => _number(value)).toList(),
         weeklyBias: Bias.fromWire(row['weekly_bias'] as String? ?? ''),
         dailyBias: Bias.fromWire(row['daily_bias'] as String? ?? ''),
         session: TradingSession.fromWire(row['session'] as String? ?? ''),
