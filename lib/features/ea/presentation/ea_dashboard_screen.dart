@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/permissions/permission.dart';
+import '../../../core/config/app_environment.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../../core/permissions/permission_gate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -26,13 +28,17 @@ class EADashboardScreen extends ConsumerWidget {
       body: accountAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),
-        data: (account) => ListView(
+        data: (account) => account == null
+            ? const EmptyView(icon: Icons.monitor_heart_outlined,
+                message: 'No EA account connected yet.')
+            : ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _StatusHeader(account: account),
             const SizedBox(height: AppSpacing.lg),
             _MetricsGrid(account: account),
             const SizedBox(height: AppSpacing.lg),
+            if (ref.watch(appEnvironmentProvider) == AppEnvironment.mock)
             PermissionGate(
               permission: Permission.eaControl,
               child: PhantomButton(
