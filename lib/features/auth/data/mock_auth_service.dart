@@ -145,6 +145,14 @@ class MockAuthService implements AuthService {
   }
 
   @override
+  Future<void> confirmPasswordReset({
+    required String accessToken,
+    required String newPassword,
+  }) async {
+    throw const AuthException('Password recovery is not available in MOCK mode.');
+  }
+
+  @override
   Future<void> register({
     required String displayName,
     required String username,

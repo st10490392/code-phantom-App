@@ -41,6 +41,8 @@ class ApiAuthService implements AuthService {
   final ApiClient _client;
   final TokenStorage _tokenStorage;
 
+  static const _authRedirectUrl = 'codephantom://auth-callback';
+
   /// Single-flight guard: concurrent callers during a refresh all await the
   /// same in-flight request instead of each firing their own
   /// `/auth/refresh` call (and each retrying independently, which is how a
@@ -157,7 +159,19 @@ class ApiAuthService implements AuthService {
     await _client.post(
       '/auth/password-reset/request',
       requiresAuth: false,
-      body: {'email': email},
+      body: {'email': email, 'redirect_to': _authRedirectUrl},
+    );
+  }
+
+  @override
+  Future<void> confirmPasswordReset({
+    required String accessToken,
+    required String newPassword,
+  }) async {
+    await _client.post(
+      '/auth/password-reset/confirm',
+      requiresAuth: false,
+      body: {'access_token': accessToken, 'new_password': newPassword},
     );
   }
 
@@ -181,6 +195,7 @@ class ApiAuthService implements AuthService {
         'username': username,
         'email': email,
         'password': password,
+        'redirect_to': _authRedirectUrl,
       },
     );
   }
@@ -190,7 +205,7 @@ class ApiAuthService implements AuthService {
     await _client.post(
       '/auth/verification/resend',
       requiresAuth: false,
-      body: {'email': email},
+      body: {'email': email, 'redirect_to': _authRedirectUrl},
     );
   }
 

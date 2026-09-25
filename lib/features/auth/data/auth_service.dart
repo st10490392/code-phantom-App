@@ -20,6 +20,13 @@ abstract class AuthService {
 
   Future<void> requestPasswordReset({required String email});
 
+  /// Completes password recovery using the short-lived recovery token from
+  /// the Supabase auth callback. This token is never a normal app session.
+  Future<void> confirmPasswordReset({
+    required String accessToken,
+    required String newPassword,
+  });
+
   /// Self-service sign-up. A unique username is required by the backend;
   /// role/permissions are never chosen by the caller —
   /// the backend assigns the new account's role (starting this milestone,
