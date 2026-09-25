@@ -36,7 +36,10 @@ class EADashboardScreen extends ConsumerWidget {
           children: [
             _StatusHeader(account: account),
             const SizedBox(height: AppSpacing.lg),
-            _MetricsGrid(account: account),
+            if (account.lastHeartbeat.millisecondsSinceEpoch == 0)
+              const PhantomCard(child: Text('Waiting for the EA to send its first heartbeat.'))
+            else
+              _MetricsGrid(account: account),
             const SizedBox(height: AppSpacing.lg),
             if (ref.watch(appEnvironmentProvider) == AppEnvironment.mock)
             PermissionGate(
