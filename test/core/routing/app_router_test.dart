@@ -11,6 +11,7 @@ import 'package:code_phantom_app/features/auth/data/auth_service.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_session.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_user.dart';
 import 'package:code_phantom_app/features/auth/presentation/auth_providers.dart';
+import 'package:code_phantom_app/features/auth/presentation/auth_callback_screen.dart';
 import 'package:code_phantom_app/features/auth/presentation/create_account_screen.dart';
 import 'package:code_phantom_app/features/auth/presentation/register_placeholder_screen.dart';
 
@@ -38,6 +39,10 @@ class _FixedAuthService implements AuthService {
 
   @override
   Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+
+  @override
+  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+      throw UnimplementedError();
 
   @override
   Future<void> register({
@@ -69,6 +74,10 @@ class _UnauthenticatedAuthService implements AuthService {
   Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
 
   @override
+  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> register({
     required String displayName,
     required String username,
@@ -82,6 +91,24 @@ class _UnauthenticatedAuthService implements AuthService {
 }
 
 void main() {
+  group('CodePhantom auth callback URI', () {
+    test('recognizes the registered custom scheme and host', () {
+      expect(
+        isCodePhantomAuthCallback(Uri.parse('codephantom://auth-callback#type=recovery')),
+        isTrue,
+      );
+      expect(isCodePhantomAuthCallback(Uri.parse('https://example.com/auth-callback')), isFalse);
+    });
+
+    test('parses Supabase callback values from the fragment', () {
+      final params = authCallbackParameters(
+        Uri.parse('codephantom://auth-callback#access_token=abc123&type=recovery'),
+      );
+      expect(params['access_token'], 'abc123');
+      expect(params['type'], 'recovery');
+    });
+  });
+
   group('permissionForPath — route → permission mapping', () {
     test('gated module routes map to their permission', () {
       expect(permissionForPath('/scanner'), Permission.scannerAccess);

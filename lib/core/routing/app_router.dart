@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../config/app_environment.dart';
 import '../../features/auth/presentation/auth_providers.dart';
+import '../../features/auth/presentation/auth_callback_screen.dart';
 import '../../features/auth/presentation/create_account_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
@@ -32,6 +33,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: _AuthRefreshListenable(ref),
     redirect: (context, state) {
+      if (isCodePhantomAuthCallback(state.uri)) return null;
+
       final authState = ref.read(authControllerProvider);
       final loggingIn = ['/login', '/forgot-password', '/register', '/verify-email']
           .contains(state.matchedLocation);
@@ -54,6 +57,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => AuthCallbackScreen(uri: state.uri),
+      ),
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
@@ -75,8 +82,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/verify-email',
         // `extra` is the email just registered (or the one just attempted at
         // login, if that attempt reported the account isn't verified yet).
-        // No deep-link support this milestone — reaching this route any
-        // other way (e.g. a cold app restart) shows a blank-email fallback.
+        // In-app navigation still passes the email through extra; actual
+        // verification links return through AuthCallbackScreen.
         builder: (context, state) => VerifyEmailScreen(email: state.extra as String? ?? ''),
       ),
       ShellRoute(
