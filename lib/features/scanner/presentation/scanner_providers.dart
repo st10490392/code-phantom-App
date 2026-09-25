@@ -5,12 +5,17 @@ import '../../notifications/domain/app_notification.dart';
 import '../../notifications/presentation/notifications_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
 import '../data/mock_scanner_service.dart';
+import '../data/api_scanner_service.dart';
+import '../../../core/config/app_environment.dart';
 import '../data/scanner_service.dart';
 import '../domain/scanner_enums.dart';
 import '../domain/scanner_setup.dart';
 
 /// Swap for `ApiScannerService` in Phase 3 — UI depends only on this provider.
-final scannerServiceProvider = Provider<ScannerService>((ref) => MockScannerService());
+final scannerServiceProvider = Provider<ScannerService>((ref) =>
+    ref.watch(appEnvironmentProvider) == AppEnvironment.mock
+        ? MockScannerService()
+        : ApiScannerService(ref.watch(apiClientProvider)));
 
 /// The single place that decides which setups a caller is allowed to see.
 ///
