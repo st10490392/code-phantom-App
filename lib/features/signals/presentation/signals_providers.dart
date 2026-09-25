@@ -13,7 +13,7 @@ import '../publishing/signal_publisher_service.dart';
 final signalServiceProvider = Provider<SignalService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockSignalService()
-        : ApiSignalService(ref.watch(apiClientProvider)));
+        : ApiSignalService(ref.watch(apiClientProvider)),
 
 final signalPublisherServiceProvider = Provider<SignalPublisherService>(
   (ref) => CompositeSignalPublisher([
