@@ -217,7 +217,7 @@ class _EASummary extends ConsumerWidget {
       error: (e, _) => ErrorView(message: '$e'),
       data: (account) => account == null
           ? const EmptyView(icon: Icons.monitor_heart_outlined,
-              message: 'No EA account connected yet.')
+              message: 'No EA account connected yet.',)
           : account.lastHeartbeat.millisecondsSinceEpoch == 0
               ? const PhantomCard(child: Text('Waiting for the first EA heartbeat.'))
               : _SummaryRow(tiles: [
