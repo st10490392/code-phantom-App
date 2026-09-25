@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/permissions/permission.dart';
+import '../../../core/config/app_environment.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../../core/permissions/permission_gate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -87,7 +89,7 @@ class SetupDetailBody extends ConsumerWidget {
         if (setup.reviewedBy != null) _row(context, 'Reviewed by', setup.reviewedBy!),
         if (setup.reviewedAt != null) _row(context, 'Reviewed', relativeTime(setup.reviewedAt!)),
         const SizedBox(height: AppSpacing.xl),
-        if (isPending)
+        if (isPending && ref.watch(appEnvironmentProvider) == AppEnvironment.mock)
           PermissionGate(
             permission: Permission.scannerReview,
             child: Column(
