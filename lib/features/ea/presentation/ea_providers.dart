@@ -10,14 +10,17 @@ final eaServiceProvider = Provider<EAService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockEAService()
         : ApiEAService(ref.watch(apiClientProvider)),
+);
 final eaAccountServiceProvider = Provider<EAAccountService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockEAAccountService()
         : ApiEAService(ref.watch(apiClientProvider)),
+);
 final eaControlServiceProvider = Provider<EAControlService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockEAControlService()
         : ApiEAService(ref.watch(apiClientProvider)),
+);
 
 final eaAccountListProvider = FutureProvider<List<EAAccount>>((ref) {
   return ref.watch(eaServiceProvider).listAccounts();
