@@ -14,6 +14,7 @@ final signalServiceProvider = Provider<SignalService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockSignalService()
         : ApiSignalService(ref.watch(apiClientProvider)),
+);
 
 final signalPublisherServiceProvider = Provider<SignalPublisherService>(
   (ref) => CompositeSignalPublisher([
