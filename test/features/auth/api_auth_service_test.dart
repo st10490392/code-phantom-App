@@ -366,6 +366,44 @@ void main() {
     });
   });
 
+  group('ApiAuthService.passwordReset', () {
+    test('request includes the CodePhantom mobile callback', () async {
+      final b = _build();
+      Map<String, dynamic>? sentBody;
+      b.mock('POST', '/auth/password-reset/request', (options) {
+        sentBody = Map<String, dynamic>.from(options.data as Map);
+        return const FakeResponse(statusCode: 202, body: {'data': {'message': 'sent'}});
+      });
+
+      await b.service.requestPasswordReset(email: 'client@codephantom.dev');
+
+      expect(sentBody, {
+        'email': 'client@codephantom.dev',
+        'redirect_to': 'codephantom://auth-callback',
+      });
+    });
+
+    test('confirm posts the recovery token and new password without storing a session', () async {
+      final b = _build();
+      Map<String, dynamic>? sentBody;
+      b.mock('POST', '/auth/password-reset/confirm', (options) {
+        sentBody = Map<String, dynamic>.from(options.data as Map);
+        return const FakeResponse(statusCode: 200, body: {'data': {'message': 'updated'}});
+      });
+
+      await b.service.confirmPasswordReset(
+        accessToken: 'recovery-access-token',
+        newPassword: 'new-password-123',
+      );
+
+      expect(sentBody, {
+        'access_token': 'recovery-access-token',
+        'new_password': 'new-password-123',
+      });
+      expect(await b.tokenStorage.hasStoredSession(), isFalse);
+    });
+  });
+
   group('ApiAuthService.register', () {
     test('posts display name/username/email/password and never stores a session', () async {
       final b = _build();
@@ -392,6 +430,7 @@ void main() {
         'username': 'new_client',
         'email': 'new.client@codephantom.dev',
         'password': 'a-strong-password-123',
+        'redirect_to': 'codephantom://auth-callback',
       });
       expect(await b.tokenStorage.hasStoredSession(), isFalse,
           reason: 'registration must never establish a local session — email verification is required first',);
@@ -511,7 +550,10 @@ void main() {
 
       await b.service.resendVerificationEmail(email: 'new.client@codephantom.dev');
 
-      expect(sentBody, {'email': 'new.client@codephantom.dev'});
+      expect(sentBody, {
+        'email': 'new.client@codephantom.dev',
+        'redirect_to': 'codephantom://auth-callback',
+      });
     });
 
     test('a resend failure surfaces as a typed AppException', () async {

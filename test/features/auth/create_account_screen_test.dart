@@ -49,6 +49,10 @@ class _FakeAuthService implements AuthService {
   Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
 
   @override
+  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> resendVerificationEmail({required String email}) => throw UnimplementedError();
 }
 

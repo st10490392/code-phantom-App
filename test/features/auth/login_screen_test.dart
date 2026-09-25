@@ -23,6 +23,10 @@ class _StubAuthService implements AuthService {
   Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
 
   @override
+  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> register({
     required String displayName,
     required String username,
