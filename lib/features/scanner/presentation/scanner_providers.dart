@@ -15,7 +15,7 @@ import '../domain/scanner_setup.dart';
 final scannerServiceProvider = Provider<ScannerService>((ref) =>
     ref.watch(appEnvironmentProvider) == AppEnvironment.mock
         ? MockScannerService()
-        : ApiScannerService(ref.watch(apiClientProvider)));
+        : ApiScannerService(ref.watch(apiClientProvider)),
 
 /// The single place that decides which setups a caller is allowed to see.
 ///
