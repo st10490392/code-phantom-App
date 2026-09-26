@@ -100,7 +100,10 @@ class ScannerReviewController extends StateNotifier<AsyncValue<void>> {
               note: note,
               reviewedBy: _reviewerName,
             );
-        await _ref.read(signalServiceProvider).createFromSetup(approved);
+        // The backend approval already creates the signal atomically.
+        if (_ref.read(appEnvironmentProvider) == AppEnvironment.mock) {
+          await _ref.read(signalServiceProvider).createFromSetup(approved);
+        }
         final now = DateTime.now();
         final notifications = _ref.read(notificationServiceProvider);
         await notifications.notify(AppNotification(
