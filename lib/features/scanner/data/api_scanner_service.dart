@@ -5,8 +5,13 @@ import 'scanner_service.dart';
 
 /// Read-only view of the backend scanner queue until strategy validation.
 class ApiScannerService implements ScannerService {
-  ApiScannerService(this._client);
+  ApiScannerService(this._client, {this.actionsEnabled = false});
   final ApiClient _client;
+  final bool actionsEnabled;
+
+  void _requireActions() {
+    if (!actionsEnabled) throw StateError('Scanner review awaits strategy validation.');
+  }
 
   Future<List<ScannerSetup>> _list(SetupStatus? status) async {
     final response = await _client.get('/scanner/setups', query: {
@@ -36,6 +41,7 @@ class ApiScannerService implements ScannerService {
 
   @override
   Future<ScannerSetup> approve(String setupId, {String? note, String? reviewedBy}) async {
+    _requireActions();
     final response = await _client.post(
       '/scanner/setups/${Uri.encodeComponent(setupId)}/approve',
     );
@@ -45,6 +51,7 @@ class ApiScannerService implements ScannerService {
 
   @override
   Future<ScannerSetup> reject(String setupId, {required String reason, String? reviewedBy}) async {
+    _requireActions();
     final response = await _client.post(
       '/scanner/setups/${Uri.encodeComponent(setupId)}/reject',
       body: {'rejection_reason': reason},
@@ -54,6 +61,7 @@ class ApiScannerService implements ScannerService {
 
   @override
   Future<ScannerSetup> update(ScannerSetup setup) async {
+    _requireActions();
     final response = await _client.patch(
       '/scanner/setups/${Uri.encodeComponent(setup.id)}',
       body: {
