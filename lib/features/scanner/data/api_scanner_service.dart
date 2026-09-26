@@ -35,16 +35,42 @@ class ApiScannerService implements ScannerService {
   }
 
   @override
-  Future<ScannerSetup> approve(String setupId, {String? note, String? reviewedBy}) =>
-      Future.error(StateError('Scanner review is paused until backtests pass.'));
+  Future<ScannerSetup> approve(String setupId, {String? note, String? reviewedBy}) async {
+    final response = await _client.post(
+      '/scanner/setups/${Uri.encodeComponent(setupId)}/approve',
+    );
+    // Approval and signal creation are one backend transaction.
+    return _decode((response['data'] as Map<String, dynamic>)['setup'] as Map<String, dynamic>);
+  }
 
   @override
-  Future<ScannerSetup> reject(String setupId, {required String reason, String? reviewedBy}) =>
-      Future.error(StateError('Scanner review is paused until backtests pass.'));
+  Future<ScannerSetup> reject(String setupId, {required String reason, String? reviewedBy}) async {
+    final response = await _client.post(
+      '/scanner/setups/${Uri.encodeComponent(setupId)}/reject',
+      body: {'rejection_reason': reason},
+    );
+    return _decode(response['data'] as Map<String, dynamic>);
+  }
 
   @override
-  Future<ScannerSetup> update(ScannerSetup setup) =>
-      Future.error(StateError('Scanner review is paused until backtests pass.'));
+  Future<ScannerSetup> update(ScannerSetup setup) async {
+    final response = await _client.patch(
+      '/scanner/setups/${Uri.encodeComponent(setup.id)}',
+      body: {
+        'symbol': setup.symbol,
+        'timeframe': setup.timeframe,
+        'direction': setup.direction.wireValue,
+        'entry': setup.entry,
+        'stop_loss': setup.stopLoss,
+        'take_profits': setup.takeProfits,
+        'weekly_bias': setup.weeklyBias.wireValue,
+        'daily_bias': setup.dailyBias.wireValue,
+        'session': setup.session.wireValue,
+        'notes': setup.notes,
+      },
+    );
+    return _decode(response['data'] as Map<String, dynamic>);
+  }
 
   double _number(Object? value) => value is num ? value.toDouble() : double.parse(value as String);
 
