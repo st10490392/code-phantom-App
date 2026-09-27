@@ -11,6 +11,7 @@ import '../../features/auth/presentation/register_placeholder_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/clients/presentation/client_list_screen.dart';
+import '../../features/commerce/presentation/store_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
 import '../../features/licences/presentation/licence_list_screen.dart';
@@ -90,6 +91,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
+          GoRoute(path: '/store', builder: (context, state) => const StoreScreen()),
           GoRoute(
             path: '/scanner',
             builder: (context, state) => const ScannerScreen(),
