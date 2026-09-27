@@ -27,6 +27,11 @@ class AppShell extends ConsumerWidget {
         title: const BrandMark(size: 28),
         actions: [
           IconButton(
+            icon: const Icon(Icons.shopping_bag_outlined, color: AppColors.mutedText),
+            tooltip: 'Services & Billing',
+            onPressed: () => context.go('/store'),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: AppColors.mutedText),
             tooltip: 'Log out',
             onPressed: () async {
