@@ -107,6 +107,22 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  /// Refreshes the current server-authoritative account snapshot after a
+  /// purchase or entitlement change without making the user sign in again.
+  Future<void> refreshAccount() async {
+    final current = state.session;
+    if (current == null) return;
+    try {
+      final refreshed = await _authService.restoreSession();
+      if (refreshed != null) {
+        state = AuthState(status: AuthStatus.authenticated, session: refreshed);
+      }
+    } on AppException {
+      // Keep the already-authenticated session on transient refresh failure.
+      // Normal API authorization still happens server-side.
+    }
+  }
+
   Future<void> requestPasswordReset(String email) =>
       _authService.requestPasswordReset(email: email);
 
