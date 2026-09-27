@@ -24,6 +24,15 @@ void main() {
     expect(container.read(authServiceProvider), isA<ApiAuthService>());
   });
 
+  test('STAGING mode also resolves authServiceProvider to ApiAuthService', () {
+    final container = ProviderContainer(
+      overrides: [appEnvironmentProvider.overrideWithValue(AppEnvironment.staging)],
+    );
+    addTearDown(container.dispose);
+
+    expect(container.read(authServiceProvider), isA<ApiAuthService>());
+  });
+
   test('PRODUCTION mode also resolves authServiceProvider to ApiAuthService', () {
     final container = ProviderContainer(
       overrides: [appEnvironmentProvider.overrideWithValue(AppEnvironment.production)],

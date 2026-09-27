@@ -92,7 +92,7 @@ class SetupDetailBody extends ConsumerWidget {
         if (setup.reviewedBy != null) _row(context, 'Reviewed by', setup.reviewedBy!),
         if (setup.reviewedAt != null) _row(context, 'Reviewed', relativeTime(setup.reviewedAt!)),
         const SizedBox(height: AppSpacing.xl),
-        if (isPending)
+        if (isPending && ref.watch(scannerReviewActionsEnabledProvider))
           PermissionGate(
             permission: Permission.scannerReview,
             child: Column(

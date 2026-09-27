@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/api_config.dart';
 import '../../../core/config/app_environment.dart';
 import '../../../core/permissions/permission.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -11,19 +12,23 @@ import '../data/scanner_service.dart';
 import '../domain/scanner_enums.dart';
 import '../domain/scanner_setup.dart';
 
+/// Whether real Scanner review actions are enabled for this build (see
+/// `ApiConfig.scannerReviewActionsEnabled`). Always true in mock mode.
+final scannerReviewActionsEnabledProvider = Provider<bool>((ref) =>
+    ref.watch(appEnvironmentProvider) == AppEnvironment.mock || ApiConfig.scannerReviewActionsEnabled,);
+
 /// MOCK → in-memory [MockScannerService] (tests, demos, `flutter run`
-/// without APP_ENV). DEVELOPMENT/PRODUCTION → [ApiScannerService] against
-/// the real backend, which is the source of truth for the review queue.
-/// The UI depends only on this provider.
-final scannerServiceProvider = Provider<ScannerService>((ref) {
-  switch (ref.watch(appEnvironmentProvider)) {
-    case AppEnvironment.mock:
-      return MockScannerService();
-    case AppEnvironment.development:
-    case AppEnvironment.production:
-      return ApiScannerService(ref.watch(apiClientProvider));
-  }
-});
+/// without APP_ENV). Every connected environment (development, staging,
+/// production) → [ApiScannerService] against the real backend, which is the
+/// source of truth for the review queue. The UI depends only on this provider.
+final scannerServiceProvider = Provider<ScannerService>((ref) =>
+    ref.watch(appEnvironmentProvider) == AppEnvironment.mock
+        ? MockScannerService()
+        : ApiScannerService(
+            ref.watch(apiClientProvider),
+            actionsEnabled: ref.watch(scannerReviewActionsEnabledProvider),
+          ),
+);
 
 /// The single place that decides which setups a caller is allowed to see.
 ///

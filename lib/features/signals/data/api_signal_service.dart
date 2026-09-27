@@ -10,7 +10,8 @@ import 'signal_service.dart';
 /// [SignalService] backed by the CodePhantom backend (`/signals`).
 ///
 /// Signals are created only by the backend's scanner approval transaction
-/// (exactly one per approved setup), so [createFromSetup] is refused here.
+/// (exactly one per approved setup), so [createFromSetup] is refused here,
+/// and status changes are paused until backtests pass.
 /// Clients without signals.publish/manage only receive published signals.
 class ApiSignalService implements SignalService {
   ApiSignalService(this._client, {this.pollInterval = const Duration(seconds: 30)});
@@ -37,27 +38,11 @@ class ApiSignalService implements SignalService {
   Stream<List<Signal>> watchSignals({SignalStatus? status}) =>
       pollingStream(() => _list(status), pollInterval: pollInterval, refresh: _changed.stream);
 
+  /// Signal management (publish/status changes) is paused until the
+  /// strategy backtests pass; nothing is sent to the backend.
   @override
-  Future<Signal> updateStatus(String signalId, SignalStatus status) async {
-    final id = Uri.encodeComponent(signalId);
-    final Map<String, dynamic> response;
-    if (status == SignalStatus.published) {
-      // In-app publish only; external channels are an explicit, separate choice.
-      final result = await _client.post(
-        '/signals/$id/publish',
-        body: {
-          'channels': ['APP'],
-        },
-      );
-      response = {'data': (result['data'] as Map<String, dynamic>)['signal']};
-    } else if (status == SignalStatus.pending || status == SignalStatus.approved) {
-      throw StateError('A signal cannot be moved back to ${status.wireValue}.');
-    } else {
-      response = await _client.patch('/signals/$id/status', body: {'status': status.wireValue});
-    }
-    _changed.add(null);
-    return signalFromBackendJson(response['data'] as Map<String, dynamic>);
-  }
+  Future<Signal> updateStatus(String signalId, SignalStatus status) =>
+      Future.error(StateError('Signal management is paused until backtests pass.'));
 
   @override
   Future<SignalPerformanceSummary> performanceSummary() async {
@@ -75,9 +60,8 @@ class ApiSignalService implements SignalService {
   }
 
   @override
-  Future<Signal> createFromSetup(ScannerSetup setup) {
-    throw UnsupportedError('Signals are created by the backend when a setup is approved.');
-  }
+  Future<Signal> createFromSetup(ScannerSetup setup) =>
+      Future.error(StateError('Only the backend can create a signal from an approved setup.'));
 }
 
 /// Decodes a `public.signals` row (`numeric` scalars arrive as strings).

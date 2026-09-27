@@ -16,11 +16,28 @@ import 'scanner_service.dart';
 ///
 /// Visibility is enforced server-side too: callers without `scanner.review`
 /// only ever receive APPROVED setups whatever `status` they ask for.
+///
+/// Review actions (approve/reject/edit) are paused until the Scanner
+/// backtest is validated: with [actionsEnabled] false (the default) they
+/// throw before any network call. The owner enables them with the public
+/// build flag `SCANNER_REVIEW_ACTIONS=true` (see `ApiConfig`). The backend
+/// enforces `scanner.review` regardless.
 class ApiScannerService implements ScannerService {
-  ApiScannerService(this._client, {this.pollInterval = const Duration(seconds: 30)});
+  ApiScannerService(
+    this._client, {
+    this.pollInterval = const Duration(seconds: 30),
+    this.actionsEnabled = false,
+  });
 
   final ApiClient _client;
   final Duration pollInterval;
+  final bool actionsEnabled;
+
+  void _requireActions() {
+    if (!actionsEnabled) {
+      throw StateError('Scanner review actions are paused until the Scanner backtest is validated.');
+    }
+  }
   final StreamController<void> _changed = StreamController<void>.broadcast();
 
   /// Backend page size; comfortably above the review queue's working set.
@@ -52,6 +69,7 @@ class ApiScannerService implements ScannerService {
 
   @override
   Future<ScannerSetup> approve(String setupId, {String? note, String? reviewedBy}) async {
+    _requireActions();
     // Idempotent server-side: a repeat returns the existing Signal (200).
     final response = await _client.post(_path(setupId, '/approve'));
     final data = response['data'] as Map<String, dynamic>;
@@ -61,6 +79,7 @@ class ApiScannerService implements ScannerService {
 
   @override
   Future<ScannerSetup> reject(String setupId, {required String reason, String? reviewedBy}) async {
+    _requireActions();
     final response = await _client.post(_path(setupId, '/reject'), body: {'rejection_reason': reason});
     _changed.add(null);
     return ScannerSetup.fromBackendJson(response['data'] as Map<String, dynamic>);
@@ -73,6 +92,7 @@ class ApiScannerService implements ScannerService {
   /// them with 409 IMMUTABLE_FIELD.
   @override
   Future<ScannerSetup> update(ScannerSetup setup) async {
+    _requireActions();
     final current = (await getSetupById(setup.id))!;
     final body = editRequestBody(current, setup);
     if (body.isEmpty) return current;

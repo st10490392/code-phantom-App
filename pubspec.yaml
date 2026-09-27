@@ -38,6 +38,7 @@ dependencies:
   # points, used by the majority of production Flutter apps that talk to a
   # REST backend.
   dio: ^5.7.0
+  package_info_plus: ^9.0.1
 
   # Opens provider-hosted checkout outside the app so payment credentials
   # never touch CodePhantom's Flutter process.

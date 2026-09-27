@@ -31,8 +31,9 @@ final apiClientProvider = Provider<ApiClient>(
 final appEnvironmentProvider = Provider<AppEnvironment>((ref) => ApiConfig.environment);
 
 /// MOCK → `MockAuthService` (existing mock accounts, untouched).
-/// DEVELOPMENT/PRODUCTION → `ApiAuthService` against the real CodePhantom
-/// backend. This is the only provider that changes per environment —
+/// Every other environment → `ApiAuthService` against the real CodePhantom
+/// backend (which one is decided entirely by `ApiConfig.baseUrl`, not by
+/// this provider). This is the only provider that changes per environment —
 /// everything downstream (`AuthController`, `PermissionGate`, route
 /// guards, every screen) depends on the `AuthService` interface, not on
 /// which implementation is active.
@@ -41,6 +42,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
     case AppEnvironment.mock:
       return MockAuthService(ref.watch(secureStorageProvider));
     case AppEnvironment.development:
+    case AppEnvironment.staging:
     case AppEnvironment.production:
       return ApiAuthService(ref.watch(apiClientProvider), ref.watch(tokenStorageProvider));
   }
