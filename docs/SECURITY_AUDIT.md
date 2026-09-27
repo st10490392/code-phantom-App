@@ -26,7 +26,7 @@ No secret values are recorded in this document.
 | Severity | Found | Fixed in this audit | Open |
 |---|---|---|---|
 | Critical | 0 (1 advisory group rated critical by npm, reported as High WEB-1 after mitigation) | – | – |
-| High | 2 (EA-CMD, WEB-1) | 1 | 1 (WEB-1, partly mitigated) |
+| High | 2 (EA-CMD, WEB-1) | 2 (WEB-1 in website PR #9, pending merge) | 0 once #9 merges |
 | Medium | 6 | 5 | 1 (APP-TOKEN, accepted trade-off) |
 | Low | 8 | 7 | 1 (BE-RL, carried over) |
 | Informational | 2 | – | 2 |
@@ -183,7 +183,7 @@ Fixed:
 
 | ID | Severity | Status | Finding |
 |---|---|---|---|
-| WEB-1 | **High** | **Partly mitigated, open** | Next.js 14.2.35 is affected by 23 published advisories fixed only in 15.5.24+/16 (npm rates the group critical). The most severe, unauthenticated RCE in the Image Optimization API when AVIF is served, applied directly because the config enabled AVIF. **Mitigated** on branch `security/release-audit-hardening` by serving images unoptimized, which removes that endpoint and several DoS advisories. Remaining: RSC denial-of-service and cache-poisoning advisories. **Remediation: upgrade to Next.js ≥ 15.5.24.** This is a major version: the portal's `cookies()` becomes async; regression-test the portal and checkout. |
+| WEB-1 | **High** | **Fixed in PR #9 (pending merge)** | Next.js 14.2.35 is affected by 23 published advisories fixed only in 15.5.24+/16 (npm rates the group critical). The most severe, unauthenticated RCE in the Image Optimization API when AVIF is served, applied directly because the config enabled AVIF. **Mitigated** on branch `security/release-audit-hardening` by serving images unoptimized, which removes that endpoint and several DoS advisories. Remaining: RSC denial-of-service and cache-poisoning advisories. **Remediation: upgrade to Next.js ≥ 15.5.24.** This is a major version: the portal's `cookies()` becomes async; regression-test the portal and checkout. **Resolved** by website PR #9 (branch `security/nextjs-15-upgrade`): Next.js 15.5.26 + React 19, async request APIs migrated, `npm audit` 0 vulnerabilities, all routes and portal behaviour unchanged, pixel-identical pages. |
 | WEB-2 | Low | **Fixed** | Portal API routes use cookie sessions (HttpOnly, SameSite=Lax) with no Origin check. The new `middleware.ts` refuses state-changing portal requests whose `Origin`/`Sec-Fetch-Site` is not this site. This adds defence in depth for sibling subdomains and browsers without SameSite (tested). |
 
 **No issue found:**
@@ -224,11 +224,9 @@ Fixed:
 Only genuine security or reliability problems that should stop a deployment
 are listed here.
 
-1. **Website production deploy: WEB-1 (Next.js advisories).** Upgrade the
-   website to Next.js ≥ 15.5.24 before the website and portal go to
-   production. The Image Optimizer mitigation (branch
-   `security/release-audit-hardening`) must be merged in the meantime.
-   Staging may proceed with the mitigation.
+1. **Website production deploy: WEB-1 (Next.js advisories).** Merge website
+   PR #8 and then PR #9 (Next.js 15.5.26) before the website and portal go
+   to production.
 2. **Backend (any tier): merge the audit fixes.** Deploy only a backend
    that includes branch `feature/web-pwa-cors`: the EA-CMD/EA-FIELDS
    authorization fixes, PAY-REFUND and PAY-MODE. Deploying the current

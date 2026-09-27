@@ -43,9 +43,10 @@ and demos only.
 
 | Repo | Branch | PR | Contents |
 |---|---|---|---|
-| code-phantom-App | `feature/web-pwa` | #7 (draft) | Web/PWA, staging-audit integration, responsive UI, web auth, session refresh, Railway web deployment, docs, this file, `docs/SECURITY_AUDIT.md`. Supersedes PR #6 (staging connection audit), which it contains. |
+| code-phantom-App | `feature/web-pwa` | #7 (draft) | Web/PWA, staging-audit integration, responsive UI, web auth, session refresh, Railway web deployment, docs, this file, `docs/SECURITY_AUDIT.md`. Contains all of PR #6 (staging connection audit), which is now closed as superseded. |
 | code-phantom-backend | `feature/web-pwa-cors` | #14 (draft) | Web CORS rules; security fixes EA-CMD, EA-FIELDS, PAY-REFUND, PAY-MODE, WA-HOOK. **Merge before any backend deploy.** |
 | code-phantom-website | `security/release-audit-hardening` | #8 (draft) | Image Optimizer mitigation (WEB-1) and portal Origin check. |
+| code-phantom-website | `security/nextjs-15-upgrade` | #9 (draft, stacked on #8) | Next.js 15.5.26 + React 19; `npm audit` 0 vulnerabilities; closes WEB-1. |
 | CPT-Scanner | `ci/least-privilege-token` | #4 (draft) | Read-only CI token. |
 
 ## Tests (on the branches above, in the development environment)
@@ -75,8 +76,9 @@ and demos only.
    - sign in, sign out, refresh, reset password;
    - Scanner, Signals, EA;
    - Add to Home Screen.
-5. Merge website PR #8 and Scanner PR #4; schedule the
-   Next.js ≥ 15.5.24 upgrade before the website goes to production.
+5. Merge Scanner PR #4 and website PR #8, then website PR #9 (Next.js 15).
+   After #8 merges, retarget #9 to `main` if GitHub hasn't done it
+   automatically. Vercel must build with Node.js ≥ 18.18 (20 recommended).
 6. Run the Supabase Security and Performance Advisors on staging and
    production.
 7. Confirm no real account uses a mock demo password (`docs/SECURITY_AUDIT.md`
@@ -90,20 +92,20 @@ and demos only.
 See `docs/SECURITY_AUDIT.md`:
 - No secrets found in any repository or its history; no rotation required.
 - Fixed: 1 High (EA-CMD), 5 Medium, 7 Low.
+- WEB-1 (High, Next.js advisories): fixed by website PR #9 (pending merge).
 - Open:
-  - WEB-1 (High, website Next.js upgrade, partly mitigated);
   - APP-TOKEN (Medium, accepted web token-storage trade-off, documented);
   - BE-RL (Low, carried over).
 - Release blockers:
-  - website production waits on WEB-1;
+  - website production waits on PR #9 (WEB-1);
   - any backend deploy must include the `feature/web-pwa-cors` fixes.
 
 ## Recommended continuation order
 
 1. Deploy backend `feature/web-pwa-cors` and the web app to staging; verify
    on real devices (owner actions 1–4).
-2. Upgrade the website to Next.js ≥ 15.5.24 (WEB-1), regression-testing the
-   portal and checkout.
+2. Merge the website Next.js 15 upgrade (PR #9) after #8, and check the
+   Vercel preview's portal sign-in and checkout against staging.
 3. Web session hardening: HttpOnly-cookie session for the web (APP-TOKEN).
 4. Replace the mock Notifications, Clients and Licences services with real
    backend services.
