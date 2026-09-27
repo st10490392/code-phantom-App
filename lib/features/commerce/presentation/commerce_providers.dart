@@ -20,3 +20,16 @@ final paymentMethodsProvider = FutureProvider<List<PaymentMethodOption>>((ref) a
   if (service == null) return const <PaymentMethodOption>[];
   return service.listPaymentMethods();
 });
+
+
+final purchaseHistoryProvider = FutureProvider<List<CommercePurchase>>((ref) async {
+  final service = ref.watch(commerceServiceProvider);
+  if (service == null) return const <CommercePurchase>[];
+  return service.listPurchases();
+});
+
+final subscriptionsProvider = FutureProvider<List<CommerceSubscription>>((ref) async {
+  final service = ref.watch(commerceServiceProvider);
+  if (service == null) return const <CommerceSubscription>[];
+  return service.listSubscriptions();
+});
