@@ -27,12 +27,16 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
 
-    // A freshly self-registered CLIENT has role CLIENT and permissions: []
-    // from `/me` — the generic module-summary layout below would just
-    // render an near-empty page (every `hasXAccess` flag false). Show a
-    // dedicated, honest "nothing enabled yet" state instead of a
-    // blank/broken-looking dashboard.
-    if (user?.role == AppRole.client) {
+    // A CLIENT only sees onboarding while it truly has no paid/granted
+    // service access. Purchased account entitlements are translated into
+    // these UI permissions by the backend profile mapping.
+    final hasAnyClientService = user?.permissions.hasAny(const [
+          Permission.scannerAccess,
+          Permission.signalsAccess,
+          Permission.eaAccess,
+        ]) ??
+        false;
+    if (user?.role == AppRole.client && !hasAnyClientService) {
       return const _ClientOnboardingView();
     }
 
@@ -350,6 +354,13 @@ class _ClientOnboardingView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                PhantomButton(
+                  label: 'Browse services',
+                  expand: true,
+                  icon: Icons.shopping_bag_outlined,
+                  onPressed: () => context.push('/store'),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 PhantomButton(
                   label: 'View profile',
                   variant: PhantomButtonVariant.secondary,
