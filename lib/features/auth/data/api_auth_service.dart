@@ -1,3 +1,4 @@
+import '../../../core/config/api_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../../../core/storage/token_storage.dart';
@@ -36,12 +37,15 @@ import 'backend_permission_mapping.dart';
 /// `AuthController` always lands on a clean `unauthenticated` state rather
 /// than surfacing a half-restored session.
 class ApiAuthService implements AuthService {
-  ApiAuthService(this._client, this._tokenStorage);
+  ApiAuthService(this._client, this._tokenStorage, {String? authRedirectUrl})
+      : _authRedirectUrl = authRedirectUrl ?? ApiConfig.authRedirectUrl;
 
   final ApiClient _client;
   final TokenStorage _tokenStorage;
 
-  static const _authRedirectUrl = 'codephantom://auth-callback';
+  /// Platform-specific: the custom scheme on mobile, an HTTPS page on the
+  /// web (see `ApiConfig.authRedirectUrl`).
+  final String _authRedirectUrl;
 
   /// Single-flight guard: concurrent callers during a refresh all await the
   /// same in-flight request instead of each firing their own

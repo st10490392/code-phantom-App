@@ -37,12 +37,14 @@ class SetupCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          // Wraps on narrow phones (e.g. XAUUSD/index prices on a 375pt
+          // Safari viewport) instead of overflowing.
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
             children: [
               _MetricLabel(label: 'Entry', value: setup.entry.toStringAsFixed(5)),
-              const SizedBox(width: AppSpacing.lg),
               _MetricLabel(label: 'SL', value: setup.stopLoss.toStringAsFixed(5), color: AppColors.error),
-              const SizedBox(width: AppSpacing.lg),
               if (setup.tp1 != null)
                 _MetricLabel(label: 'TP1', value: setup.tp1!.toStringAsFixed(5), color: AppColors.success),
             ],

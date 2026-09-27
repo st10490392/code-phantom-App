@@ -47,15 +47,15 @@ class SignalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          // Wraps on narrow phones instead of overflowing.
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
             children: [
               _metric(context, 'Entry', signal.entry),
-              const SizedBox(width: AppSpacing.lg),
               _metric(context, 'SL', signal.stopLoss, color: AppColors.error),
-              if (signal.takeProfits.isNotEmpty) ...[
-                const SizedBox(width: AppSpacing.lg),
+              if (signal.takeProfits.isNotEmpty)
                 _metric(context, 'TP1', signal.takeProfits.first, color: AppColors.success),
-              ],
             ],
           ),
           if (signal.rMultiple != null) ...[

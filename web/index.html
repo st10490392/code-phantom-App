@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Replaced by `flutter build web --base-href`; CodePhantom is served at the host root. -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="description" content="CodePhantom by CodePhantom Technologies: Scanner setups, trading signals and EA monitoring for your CodePhantom account.">
+  <meta name="application-name" content="CodePhantom">
+  <meta name="theme-color" content="#05070D">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="format-detection" content="telephone=no">
+  <!-- The web app is behind a sign-in; keep it out of search results. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Add to Home Screen (Safari on iPhone/iPad and other browsers). -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="CodePhantom">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>CodePhantom</title>
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #05070D; }
+    #cp-splash {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 24px;
+      background: #05070D; color: #C9CDD5;
+      font: 600 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      transition: opacity 200ms ease-out;
+    }
+    #cp-splash img { width: 96px; height: 96px; border-radius: 22px; }
+    #cp-splash .cp-bar { width: 120px; height: 2px; overflow: hidden; background: #121D33; border-radius: 2px; }
+    #cp-splash .cp-bar::after {
+      content: ""; display: block; width: 40%; height: 100%;
+      background: linear-gradient(90deg, #7C3AED, #00BFFF);
+      animation: cp-load 1.1s ease-in-out infinite;
+    }
+    @keyframes cp-load { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+    @media (prefers-reduced-motion: reduce) { #cp-splash .cp-bar::after { animation: none; width: 100%; } }
+    #cp-splash.cp-hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="cp-splash" role="status" aria-live="polite">
+    <img src="icons/Icon-192.png" alt="">
+    <span>CodePhantom</span>
+    <div class="cp-bar" aria-hidden="true"></div>
+  </div>
+  <noscript>CodePhantom needs JavaScript enabled to run in your browser.</noscript>
+  <!-- External scripts only: the host's Content-Security-Policy forbids inline script. -->
+  <script src="splash.js" defer></script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

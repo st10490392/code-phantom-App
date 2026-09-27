@@ -78,28 +78,33 @@ class _LicenceCard extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
             children: [
               TextButton(
                 onPressed: () => ref.read(licenceServiceProvider).renew(licence.id, LicenceDuration.thirtyDays),
                 child: const Text('Renew 30d'),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => ref.read(licenceServiceProvider).suspend(licence.id),
-                child: const Text('Suspend'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final confirmed = await showConfirmDialog(
-                    context,
-                    title: 'Revoke licence',
-                    message: 'Revoke ${licence.key}? This cannot be undone from the client side.',
-                    confirmLabel: 'Revoke',
-                  );
-                  if (confirmed) await ref.read(licenceServiceProvider).revoke(licence.id);
-                },
-                child: const Text('Revoke', style: TextStyle(color: AppColors.error)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => ref.read(licenceServiceProvider).suspend(licence.id),
+                    child: const Text('Suspend'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final confirmed = await showConfirmDialog(
+                        context,
+                        title: 'Revoke licence',
+                        message: 'Revoke ${licence.key}? This cannot be undone from the client side.',
+                        confirmLabel: 'Revoke',
+                      );
+                      if (confirmed) await ref.read(licenceServiceProvider).revoke(licence.id);
+                    },
+                    child: const Text('Revoke', style: TextStyle(color: AppColors.error)),
+                  ),
+                ],
               ),
             ],
           ),

@@ -45,6 +45,30 @@ abstract final class ApiConfig {
 
   static const String _explicitBaseUrl = String.fromEnvironment('API_BASE_URL');
 
+  static const String _explicitAuthRedirectUrl = String.fromEnvironment('AUTH_REDIRECT_URL');
+
+  /// Where Supabase auth emails (verification, password reset, email
+  /// change) send the user back to.
+  ///
+  /// - Android/iOS: the app's custom scheme `codephantom://auth-callback`.
+  /// - Web: an HTTPS page of the deployed web app, never the custom scheme.
+  ///   `--dart-define=AUTH_REDIRECT_URL=https://<web host>/auth/callback`
+  ///   pins it; otherwise it is derived from the page's own origin, so one
+  ///   build works on whichever host serves it. The backend only honours
+  ///   URLs on its `AUTH_REDIRECT_ALLOWLIST`.
+  static String get authRedirectUrl {
+    if (!kIsWeb) return mobileAuthRedirectUrl;
+    if (_explicitAuthRedirectUrl.isNotEmpty) return _explicitAuthRedirectUrl;
+    return webAuthRedirectUrlFor(Uri.base);
+  }
+
+  static const String mobileAuthRedirectUrl = 'codephantom://auth-callback';
+
+  /// Path of the web auth-callback route.
+  static const String webAuthCallbackPath = '/auth/callback';
+
+  static String webAuthRedirectUrlFor(Uri pageUrl) => '${pageUrl.origin}$webAuthCallbackPath';
+
   /// Public build flag: `--dart-define=SCANNER_REVIEW_ACTIONS=true` turns on
   /// the real Scanner approve/reject/edit calls. Off by default while the
   /// Scanner backtest is unvalidated; the backend still requires

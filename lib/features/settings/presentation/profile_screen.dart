@@ -54,7 +54,10 @@ class ProfileScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: AppColors.mutedText)),
-          Text(value),
+          const SizedBox(width: AppSpacing.md),
+          // Long values (e.g. an email address on a narrow phone) wrap
+          // instead of overflowing.
+          Flexible(child: Text(value, textAlign: TextAlign.end)),
         ],
       ),
     );

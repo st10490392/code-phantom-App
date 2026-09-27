@@ -118,13 +118,17 @@ class _MetricsGrid extends StatelessWidget {
           color: account.tradingEnabled ? AppColors.success : AppColors.mutedText,),
     ];
 
-    return GridView.count(
+    // Fixed tile height (not an aspect ratio) so tiles never clip on
+    // narrow phones; wider windows simply fit more columns.
+    return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: AppSpacing.md,
-      crossAxisSpacing: AppSpacing.md,
-      childAspectRatio: 2.4,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 260,
+        mainAxisExtent: 108,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+      ),
       children: [for (final t in tiles) _MetricTile(metric: t)],
     );
   }
@@ -150,9 +154,15 @@ class _MetricTile extends StatelessWidget {
         children: [
           Text(metric.label, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 4),
-          Text(
-            metric.value,
-            style: AppTypography.mono(fontSize: 16, color: metric.color ?? AppColors.ghostWhite),
+          // One line at any width: long balances shrink rather than wrap.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              metric.value,
+              maxLines: 1,
+              style: AppTypography.mono(fontSize: 16, color: metric.color ?? AppColors.ghostWhite),
+            ),
           ),
         ],
       ),
