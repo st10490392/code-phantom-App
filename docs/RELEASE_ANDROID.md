@@ -59,9 +59,12 @@ application ID.
   attaches the AAB/APK to a **draft** GitHub Release.
 
 Every build: `flutter test` → signed `--release --obfuscate` AAB + APK with
-`--dart-define=APP_ENV=production --dart-define=API_BASE_URL=<env var>` →
-the job **fails if the APK is unsigned or debug-signed** → signing files are
-deleted from the runner.
+`--dart-define=APP_ENV=<staging|production> --dart-define=API_BASE_URL=<env var>`
+(a manual run always builds `staging`; only a tag push builds `production` —
+this matches the GitHub Environment the job itself uses, so the app's own
+in-app Diagnostics screen, Settings → Diagnostics, correctly identifies
+which one a given install is) → the job **fails if the APK is unsigned or
+debug-signed** → signing files are deleted from the runner.
 
 Versioning: `versionName` = tag (without `v`) or the manual input, else
 `pubspec.yaml`; `versionCode` = the workflow run number (monotonic).

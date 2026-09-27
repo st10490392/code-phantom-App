@@ -65,6 +65,33 @@ class ApiClient {
   }) =>
       _request('PATCH', path, requiresAuth: requiresAuth, body: body);
 
+  /// Diagnostics only: hits the backend's unauthenticated liveness probe at
+  /// `<origin>/health` — NOT under the versioned `/api/v1` prefix every
+  /// other method here uses, so it's built from the configured base URL's
+  /// origin directly rather than going through `_request`. Used by the
+  /// in-app diagnostics screen to prove the app can actually reach the
+  /// configured backend, and to show what environment the backend itself
+  /// reports (`{ status, env, version, started_at }` — see
+  /// `code-phantom-backend`'s `src/modules/health/routes.ts`), independent
+  /// of what this build was compiled with. Never call this for anything
+  /// other than a manual connectivity check — no real service should ever
+  /// depend on it.
+  Future<Map<String, dynamic>> checkHealth() async {
+    final base = Uri.parse(_dio.options.baseUrl);
+    if (base.host.isEmpty) {
+      throw const NetworkException('No backend configured for this build (mock mode).');
+    }
+    final healthUri = base.replace(path: '/health');
+    try {
+      final response = await _dio.getUri<dynamic>(healthUri);
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      return <String, dynamic>{'data': data};
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     String path, {

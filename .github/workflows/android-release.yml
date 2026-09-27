@@ -93,14 +93,20 @@ jobs:
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
           BUILD_NAME: ${{ github.event_name == 'push' && github.ref_name || inputs.build_name }}
+          # A manual run always builds "staging" (see the job-level
+          # `environment:` above — only a tag push ever selects the
+          # "production" GitHub Environment). APP_ENV must say the same
+          # thing: it's what the app's own diagnostics screen and any
+          # crash/analytics tagging show, and it used to be hard-coded to
+          # "production" for both, which made a staging build indistinguishable
+          # from a real production one from the device alone.
+          APP_ENV: ${{ github.event_name == 'push' && 'production' || 'staging' }}
         run: |
           name_arg=""
           if [ -n "$BUILD_NAME" ]; then name_arg="--build-name=${BUILD_NAME#v}"; fi
-          # APP_ENV=production selects the real ApiAuthService path; the
-          # environment (staging vs production) is decided by API_BASE_URL.
           common="--release --obfuscate --split-debug-info=build/debug-info \
             --build-number=${{ github.run_number }} $name_arg \
-            --dart-define=APP_ENV=production --dart-define=API_BASE_URL=$API_BASE_URL"
+            --dart-define=APP_ENV=$APP_ENV --dart-define=API_BASE_URL=$API_BASE_URL"
           flutter build appbundle $common
           flutter build apk $common
 
