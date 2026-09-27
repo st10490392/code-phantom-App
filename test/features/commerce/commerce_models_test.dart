@@ -32,6 +32,34 @@ void main() {
     expect(method.kind, 'wallet');
   });
 
+  test('purchase and subscription history parse backend billing records', () {
+    final purchase = CommercePurchase.fromJson({
+      'id': 'p1',
+      'plan_code': 'scanner_forex',
+      'provider': 'paypal',
+      'status': 'PAID',
+      'amount_minor': '19900',
+      'currency': 'ZAR',
+      'created_at': '2026-09-27T09:00:00.000Z',
+      'paid_at': '2026-09-27T09:01:00.000Z',
+    });
+    final subscription = CommerceSubscription.fromJson({
+      'id': 's1',
+      'plan_code': 'signals_monthly',
+      'provider': 'paystack',
+      'status': 'ACTIVE',
+      'amount_minor': 9900,
+      'currency': 'ZAR',
+      'current_period_end': '2026-10-27T09:00:00.000Z',
+      'next_payment_at': '2026-10-27T09:00:00.000Z',
+    });
+
+    expect(purchase.status, 'PAID');
+    expect(purchase.amountMinor, 19900);
+    expect(subscription.status, 'ACTIVE');
+    expect(subscription.nextPaymentAt, isNotNull);
+  });
+
   test('CheckoutSession accepts only the backend checkout fields used by the app', () {
     final checkout = CheckoutSession.fromJson({
       'provider': 'binance_pay',
