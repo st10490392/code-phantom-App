@@ -47,6 +47,32 @@ void main() {
     });
   });
 
+  group('permissionSetFromBackendProfile', () {
+    test('paid account entitlements unlock the matching client modules', () {
+      final set = permissionSetFromBackendProfile(
+        permissionCodes: const [],
+        entitlementCodes: const [
+          'scanner.forex.view',
+          'signals.receive',
+          'ea.monitoring',
+        ],
+      );
+      expect(set.has(Permission.scannerAccess), isTrue);
+      expect(set.has(Permission.signalsAccess), isTrue);
+      expect(set.has(Permission.eaAccess), isTrue);
+      expect(set.has(Permission.scannerReview), isFalse);
+      expect(set.has(Permission.eaControl), isFalse);
+    });
+
+    test('unknown entitlements never grant admin capabilities', () {
+      final set = permissionSetFromBackendProfile(
+        permissionCodes: const [],
+        entitlementCodes: const ['future.product.access', 'scanner.forex.notifications'],
+      );
+      expect(set.granted, isEmpty);
+    });
+  });
+
   group('primaryRoleFromBackendCodes', () {
     test('a single role maps directly', () {
       expect(primaryRoleFromBackendCodes(const ['SCANNER_CLIENT']), AppRole.scannerClient);
@@ -101,6 +127,19 @@ void main() {
       expect(user.displayName, 'x@y.com');
     });
 
+    test('a CLIENT with purchased entitlements gets service UI access without staff permissions', () {
+      final user = authUserFromApiProfile({
+        'profile': {'id': 'u5', 'email': 'buyer@codephantom.dev', 'status': 'ACTIVE', 'protected': false},
+        'roles': const ['CLIENT'],
+        'permissions': const <String>[],
+        'entitlements': const ['scanner.forex.view', 'signals.receive'],
+      });
+      expect(user.role, AppRole.client);
+      expect(user.permissions.has(Permission.scannerAccess), isTrue);
+      expect(user.permissions.has(Permission.signalsAccess), isTrue);
+      expect(user.permissions.has(Permission.scannerReview), isFalse);
+    });
+
     test('a new CLIENT with zero permissions maps to AppRole.client, not INTERNAL', () {
       final user = authUserFromApiProfile({
         'profile': {'id': 'u4', 'email': 'new.client@codephantom.dev', 'status': 'ACTIVE', 'protected': false},
@@ -134,6 +173,21 @@ void main() {
 
       final visible = visibleNavDestinationsFor(client).map((d) => d.path).toSet();
       expect(visible, {'/dashboard', '/scanner', '/notifications', '/settings'});
+      expect(visible.contains('/clients'), isFalse);
+      expect(visible.contains('/licences'), isFalse);
+      expect(visible.contains('/ea'), isFalse);
+    });
+
+    test('a paying CLIENT sees purchased service destinations automatically', () {
+      final client = authUserFromApiProfile({
+        'profile': {'id': 'u5', 'email': 'buyer@codephantom.dev', 'status': 'ACTIVE', 'protected': false},
+        'roles': const ['CLIENT'],
+        'permissions': const <String>[],
+        'entitlements': const ['scanner.indices.view', 'signals.receive'],
+      });
+
+      final visible = visibleNavDestinationsFor(client).map((d) => d.path).toSet();
+      expect(visible, {'/dashboard', '/scanner', '/signals', '/notifications', '/settings'});
       expect(visible.contains('/clients'), isFalse);
       expect(visible.contains('/licences'), isFalse);
       expect(visible.contains('/ea'), isFalse);

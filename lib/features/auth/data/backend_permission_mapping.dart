@@ -41,6 +41,30 @@ PermissionSet permissionSetFromBackendCodes(Iterable<String> codes) {
   return PermissionSet(granted);
 }
 
+/// Converts account-level service entitlements into the same UI permission
+/// gates the app already uses. These are UX visibility grants only; the
+/// backend still authorizes every request from its own entitlement records.
+PermissionSet permissionSetFromBackendProfile({
+  required Iterable<String> permissionCodes,
+  required Iterable<String> entitlementCodes,
+}) {
+  final granted = <Permission>{
+    ...permissionSetFromBackendCodes(permissionCodes).granted,
+  };
+
+  for (final code in entitlementCodes) {
+    if (code.startsWith('scanner.') && code.endsWith('.view')) {
+      granted.add(Permission.scannerAccess);
+    } else if (code == 'signals.receive') {
+      granted.add(Permission.signalsAccess);
+    } else if (code == 'ea.monitoring') {
+      granted.add(Permission.eaAccess);
+    }
+  }
+
+  return PermissionSet(granted);
+}
+
 /// Highest-privilege-first — used only to collapse the backend's
 /// `roles: string[]` (a user can hold more than one) into the single
 /// [AppRole] the app's domain model keeps for display and the `isOwner`
@@ -66,20 +90,26 @@ AppRole primaryRoleFromBackendCodes(Iterable<String> codes) {
 }
 
 /// Maps a `GET /me` response body — `{ data: { profile, roles,
-/// permissions } }`, already unwrapped to the inner `data` map — onto the
-/// app's [AuthUser]. The backend is authoritative for `roles` and
-/// `permissions`; nothing here recomputes them from role defaults.
+/// permissions, entitlements } }`, already unwrapped to the inner `data`
+/// map — onto the app's [AuthUser]. The backend is authoritative for both
+/// staff permissions and paid account entitlements. Older backends that do
+/// not yet include `entitlements` remain compatible by treating it as empty.
 AuthUser authUserFromApiProfile(Map<String, dynamic> data) {
   final profile = data['profile'] as Map<String, dynamic>;
   final roleCodes = (data['roles'] as List).cast<String>();
   final permissionCodes = (data['permissions'] as List).cast<String>();
+  final entitlementCodes =
+      ((data['entitlements'] as List?) ?? const <dynamic>[]).cast<String>();
   final email = profile['email'] as String;
   return AuthUser(
     id: profile['id'] as String,
     email: email,
     displayName: (profile['display_name'] as String?) ?? email,
     role: primaryRoleFromBackendCodes(roleCodes),
-    permissions: permissionSetFromBackendCodes(permissionCodes),
+    permissions: permissionSetFromBackendProfile(
+      permissionCodes: permissionCodes,
+      entitlementCodes: entitlementCodes,
+    ),
     status: profile['status'] as String? ?? 'ACTIVE',
     protected: profile['protected'] as bool? ?? false,
   );
