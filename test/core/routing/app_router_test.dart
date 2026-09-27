@@ -122,6 +122,7 @@ void main() {
 
     test('always-open routes have no gate', () {
       expect(permissionForPath('/dashboard'), isNull);
+      expect(permissionForPath('/store'), isNull);
       expect(permissionForPath('/notifications'), isNull);
       expect(permissionForPath('/settings'), isNull);
       expect(permissionForPath('/settings/profile'), isNull);
