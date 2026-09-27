@@ -3,45 +3,65 @@ enum SetupDirection {
   sell;
 
   String get wireValue => this == SetupDirection.buy ? 'BUY' : 'SELL';
-  static SetupDirection fromWire(String v) => v == 'BUY' ? SetupDirection.buy : SetupDirection.sell;
+
+  /// A trade direction is never guessed: anything other than BUY/SELL is a
+  /// contract violation and fails loudly instead of rendering as a SELL.
+  static SetupDirection fromWire(String v) => switch (v) {
+        'BUY' => SetupDirection.buy,
+        'SELL' => SetupDirection.sell,
+        _ => throw FormatException('Unknown setup direction', v),
+      };
 }
 
+/// [unknown] means the source did not report a bias (the CPT Scanner does
+/// not publish one). It is shown as absent, never as a fabricated NEUTRAL.
 enum Bias {
   bullish,
   bearish,
-  neutral;
+  neutral,
+  unknown;
 
   String get wireValue => switch (this) {
         Bias.bullish => 'BULLISH',
         Bias.bearish => 'BEARISH',
         Bias.neutral => 'NEUTRAL',
+        Bias.unknown => 'UNKNOWN',
       };
 
-  static Bias fromWire(String v) => switch (v) {
+  bool get isKnown => this != Bias.unknown;
+
+  static Bias fromWire(String? v) => switch (v?.toUpperCase()) {
         'BULLISH' => Bias.bullish,
         'BEARISH' => Bias.bearish,
-        _ => Bias.neutral,
+        'NEUTRAL' => Bias.neutral,
+        _ => Bias.unknown,
       };
 }
 
+/// [unknown] means no session was reported (backend `session` is nullable).
 enum TradingSession {
   asia,
   london,
   newYork,
-  overlap;
+  overlap,
+  unknown;
 
   String get wireValue => switch (this) {
         TradingSession.asia => 'ASIA',
         TradingSession.london => 'LONDON',
         TradingSession.newYork => 'NEW_YORK',
         TradingSession.overlap => 'OVERLAP',
+        TradingSession.unknown => 'UNKNOWN',
       };
 
-  static TradingSession fromWire(String v) => switch (v) {
+  bool get isKnown => this != TradingSession.unknown;
+
+  static TradingSession fromWire(String? v) => switch (v?.toUpperCase()) {
         'ASIA' => TradingSession.asia,
         'LONDON' => TradingSession.london,
         'NEW_YORK' => TradingSession.newYork,
-        _ => TradingSession.overlap,
+        'OVERLAP' => TradingSession.overlap,
+        _ => TradingSession.unknown,
       };
 }
 
@@ -69,12 +89,15 @@ enum SetupStatus {
 
   bool get isTerminal => this != SetupStatus.pending;
 
+  /// Unknown statuses fail loudly: defaulting to PENDING would put
+  /// Approve/Reject controls on a setup whose real state is unknown.
   static SetupStatus fromWire(String v) => switch (v) {
+        'PENDING' => SetupStatus.pending,
         'APPROVED' => SetupStatus.approved,
         'REJECTED' => SetupStatus.rejected,
         'CANCELLED' => SetupStatus.cancelled,
         'EXPIRED' => SetupStatus.expired,
-        _ => SetupStatus.pending,
+        _ => throw FormatException('Unknown setup status', v),
       };
 }
 

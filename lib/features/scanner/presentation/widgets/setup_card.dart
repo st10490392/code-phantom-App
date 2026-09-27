@@ -52,10 +52,13 @@ class SetupCard extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
-              PhantomChip(label: 'Weekly ${setup.weeklyBias.wireValue}'),
-              PhantomChip(label: 'Daily ${setup.dailyBias.wireValue}'),
-              PhantomChip(label: setup.session.wireValue.replaceAll('_', ' ')),
-              PhantomChip(label: 'Confluence ${setup.confluenceScore}/${setup.confluenceMaximum}'),
+              if (setup.market != null) PhantomChip(label: setup.market!),
+              if (setup.weeklyBias.isKnown) PhantomChip(label: 'Weekly ${setup.weeklyBias.wireValue}'),
+              if (setup.dailyBias.isKnown) PhantomChip(label: 'Daily ${setup.dailyBias.wireValue}'),
+              if (setup.session.isKnown) PhantomChip(label: setup.session.wireValue.replaceAll('_', ' ')),
+              if (setup.confluenceMaximum > 0)
+                PhantomChip(label: 'Confluence ${setup.confluenceScore}/${setup.confluenceMaximum}'),
+              if (setup.strategyProfile != null) PhantomChip(label: setup.strategyProfile!),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

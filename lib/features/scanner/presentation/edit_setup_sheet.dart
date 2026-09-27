@@ -12,6 +12,10 @@ import 'scanner_providers.dart';
 /// does, both are plain fields) direction and timeframe. The original
 /// detection timestamp is never shown here as editable — there is no
 /// field for it, so it can't be changed by this form even by mistake.
+///
+/// Scanner-published setups ([ScannerSetup.isMachinePublished]) keep their
+/// detected direction and timeframe: the backend treats them as immutable
+/// identity, so they are shown read-only here (reject the setup instead).
 Future<void> showEditSetupSheet(BuildContext context, ScannerSetup setup) {
   return showPhantomModalSheet(
     context: context,
@@ -40,6 +44,8 @@ class _EditSetupBodyState extends ConsumerState<_EditSetupBody> {
   late SetupDirection _direction;
   bool _isSaving = false;
   String? _error;
+
+  bool get _identityLocked => widget.setup.isMachinePublished;
 
   @override
   void initState() {
@@ -78,8 +84,8 @@ class _EditSetupBodyState extends ConsumerState<_EditSetupBody> {
         .toList();
 
     final edited = widget.setup.copyWith(
-      direction: _direction,
-      timeframe: _timeframeController.text.trim(),
+      direction: _identityLocked ? widget.setup.direction : _direction,
+      timeframe: _identityLocked ? widget.setup.timeframe : _timeframeController.text.trim(),
       entry: _parse(_entryController.text),
       stopLoss: _parse(_stopLossController.text),
       takeProfits: takeProfits,
@@ -108,31 +114,38 @@ class _EditSetupBodyState extends ConsumerState<_EditSetupBody> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: PhantomChip(
-                  label: 'BUY',
-                  selected: _direction == SetupDirection.buy,
-                  onTap: () => setState(() => _direction = SetupDirection.buy),
+          if (_identityLocked)
+            Text(
+              '${widget.setup.direction.wireValue} · ${widget.setup.timeframe} — detected by the scanner, not editable.',
+              style: const TextStyle(color: AppColors.mutedText),
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: PhantomChip(
+                    label: 'BUY',
+                    selected: _direction == SetupDirection.buy,
+                    onTap: () => setState(() => _direction = SetupDirection.buy),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: PhantomChip(
-                  label: 'SELL',
-                  selected: _direction == SetupDirection.sell,
-                  onTap: () => setState(() => _direction = SetupDirection.sell),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: PhantomChip(
+                    label: 'SELL',
+                    selected: _direction == SetupDirection.sell,
+                    onTap: () => setState(() => _direction = SetupDirection.sell),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          PhantomTextField(
-            label: 'Timeframe',
-            controller: _timeframeController,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-          ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            PhantomTextField(
+              label: 'Timeframe',
+              controller: _timeframeController,
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           PhantomTextField(
             label: 'Entry',

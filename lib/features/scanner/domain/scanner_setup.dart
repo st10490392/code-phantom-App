@@ -1,5 +1,13 @@
 import 'scanner_enums.dart';
 
+/// Backend decimals: Postgres `numeric` is serialised as a string, arrays of
+/// it as JSON numbers. Anything else is a contract violation.
+double parseWireDecimal(Object? value) => switch (value) {
+      num n => n.toDouble(),
+      String s => double.parse(s),
+      _ => throw FormatException('Expected a decimal', value),
+    };
+
 class ScannerSetup {
   const ScannerSetup({
     required this.id,
@@ -22,6 +30,11 @@ class ScannerSetup {
     this.reviewedBy,
     this.rejectionReason,
     this.editedBeforeApproval = false,
+    this.market,
+    this.brokerSymbol,
+    this.strategyProfile,
+    this.externalId,
+    this.source,
   });
 
   final String id;
@@ -63,6 +76,25 @@ class ScannerSetup {
   /// be forgotten or faked by a widget.
   final bool editedBeforeApproval;
 
+  /// Scanner market pack (`FOREX`, `INDICES`, ...) — backend `market_code`.
+  final String? market;
+
+  /// Symbol on the reference MT5 feed that produced the setup (e.g. `DE30m`
+  /// for canonical `DE40`). Detection metadata; never editable.
+  final String? brokerSymbol;
+
+  /// Frozen strategy version that produced the setup (e.g. `CPT-007-v0.2.0`).
+  final String? strategyProfile;
+
+  /// The publisher's idempotency key. Set only on machine-published setups,
+  /// whose symbol/timeframe/direction the backend treats as immutable.
+  final String? externalId;
+
+  /// Origin recorded by the backend (e.g. `CPT_SCANNER:<publisher>`).
+  final String? source;
+
+  bool get isMachinePublished => externalId != null;
+
   double? get tp1 => takeProfits.isNotEmpty ? takeProfits[0] : null;
   double? get tp2 => takeProfits.length > 1 ? takeProfits[1] : null;
   double? get tp3 => takeProfits.length > 2 ? takeProfits[2] : null;
@@ -101,6 +133,50 @@ class ScannerSetup {
       reviewedBy: reviewedBy ?? this.reviewedBy,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       editedBeforeApproval: editedBeforeApproval ?? this.editedBeforeApproval,
+      market: market,
+      brokerSymbol: brokerSymbol,
+      strategyProfile: strategyProfile,
+      externalId: externalId,
+      source: source,
+    );
+  }
+
+  /// Decodes a `public.scanner_setups` row as returned by the CodePhantom
+  /// backend (`GET /scanner/setups`, approve/reject/PATCH responses).
+  ///
+  /// Wire notes: `entry`/`stop_loss` arrive as decimal strings (Postgres
+  /// `numeric`, e.g. "2650.120000") and `take_profits` as JSON numbers;
+  /// both forms are accepted. Timestamps are UTC ISO-8601. Optional
+  /// descriptive fields the scanner does not send decode to
+  /// [Bias.unknown]/[TradingSession.unknown]; direction and status never
+  /// fall back to a guess.
+  factory ScannerSetup.fromBackendJson(Map<String, dynamic> row) {
+    return ScannerSetup(
+      id: row['id'] as String,
+      symbol: row['symbol'] as String,
+      timeframe: row['timeframe'] as String,
+      direction: SetupDirection.fromWire(row['direction'] as String),
+      entry: parseWireDecimal(row['entry']),
+      stopLoss: parseWireDecimal(row['stop_loss']),
+      takeProfits: (row['take_profits'] as List<dynamic>? ?? const []).map(parseWireDecimal).toList(growable: false),
+      weeklyBias: Bias.fromWire(row['weekly_bias'] as String?),
+      dailyBias: Bias.fromWire(row['daily_bias'] as String?),
+      session: TradingSession.fromWire(row['session'] as String?),
+      confluenceScore: (row['confluence_score'] as num?)?.toInt() ?? 0,
+      confluenceMaximum: (row['confluence_max'] as num?)?.toInt() ?? 0,
+      status: SetupStatus.fromWire(row['status'] as String),
+      detectedAt: DateTime.parse(row['detected_at'] as String),
+      notes: row['notes'] as String?,
+      chartImageUrl: row['chart_image_url'] as String?,
+      reviewedAt: row['reviewed_at'] == null ? null : DateTime.parse(row['reviewed_at'] as String),
+      reviewedBy: row['reviewed_by'] as String?,
+      rejectionReason: row['rejection_reason'] as String?,
+      editedBeforeApproval: row['edited_before_approval'] as bool? ?? false,
+      market: row['market_code'] as String?,
+      brokerSymbol: row['broker_symbol'] as String?,
+      strategyProfile: row['strategy_profile'] as String?,
+      externalId: row['external_id'] as String?,
+      source: row['source'] as String?,
     );
   }
 
@@ -128,6 +204,11 @@ class ScannerSetup {
       reviewedBy: json['reviewedBy'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
       editedBeforeApproval: json['editedBeforeApproval'] as bool? ?? false,
+      market: json['market'] as String?,
+      brokerSymbol: json['brokerSymbol'] as String?,
+      strategyProfile: json['strategyProfile'] as String?,
+      externalId: json['externalId'] as String?,
+      source: json['source'] as String?,
     );
   }
 
@@ -152,5 +233,10 @@ class ScannerSetup {
         if (reviewedBy != null) 'reviewedBy': reviewedBy,
         if (rejectionReason != null) 'rejectionReason': rejectionReason,
         'editedBeforeApproval': editedBeforeApproval,
+        if (market != null) 'market': market,
+        if (brokerSymbol != null) 'brokerSymbol': brokerSymbol,
+        if (strategyProfile != null) 'strategyProfile': strategyProfile,
+        if (externalId != null) 'externalId': externalId,
+        if (source != null) 'source': source,
       };
 }

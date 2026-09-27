@@ -7,10 +7,10 @@
 /// - [production]: the real CodePhantom backend's production URL, once one
 ///   exists.
 ///
-/// [development] and [production] both select `ApiAuthService` for this
-/// milestone — only auth is real so far; Scanner/Signals/EA/Clients/
-/// Licences/Notifications stay mock-backed in every environment until their
-/// own migration milestones.
+/// [development] and [production] select the real backend for auth, the
+/// Scanner review queue and Signals (`ApiAuthService`, `ApiScannerService`,
+/// `ApiSignalService`). EA/Clients/Licences/Notifications stay mock-backed
+/// until their own migration milestones.
 enum AppEnvironment {
   mock,
   development,

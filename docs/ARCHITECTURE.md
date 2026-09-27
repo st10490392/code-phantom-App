@@ -48,7 +48,7 @@ lib/
       data/ domain/ presentation/     # summary aggregation across modules (reads
                                        # from the other features' repositories)
     scanner/
-      data/                  # ScannerService interface + MockScannerService
+      data/                  # ScannerService interface, MockScannerService, ApiScannerService
       domain/                 # ScannerSetup, SetupStatus, Bias, Session enums
       presentation/            # PendingTab, ApprovedTab, RejectedTab, HistoryTab,
                                 # SetupDetailSheet, ApproveRejectDialog
@@ -95,7 +95,10 @@ All models are `freezed` classes with `fromJson`/`toJson`; enums use
 - **Role/Permission**: see §5.
 - **ScannerSetup**: `id, symbol, timeframe, direction(BUY/SELL), entry, stopLoss,
   takeProfits[tp1,tp2,tp3], weeklyBias, dailyBias, session, confluenceScore,
-  confluenceMaximum, status, detectedAt, notes?, chartImageUrl?`.
+  confluenceMaximum, status, detectedAt, notes?, chartImageUrl?, market?,
+  brokerSymbol?, strategyProfile?, externalId?, source?`. Backend rows are
+  decoded by `ScannerSetup.fromBackendJson` (decimal strings accepted;
+  unreported bias/session decode to `unknown`; direction/status never guessed).
 - **Signal**: `id, setupId?, symbol, direction, entry, stopLoss, takeProfits[],
   status, session, openedAt, closedAt?, result?, rMultiple?, notes?`.
   `SignalStatus`: PENDING, APPROVED, PUBLISHED, ACTIVE, TP1_HIT, TP2_HIT,
@@ -213,9 +216,15 @@ abstract class NotificationService {
 }
 ```
 
-Migration path: `MockScannerService implements ScannerService` today;
-`ApiScannerService implements ScannerService` later, swapped in a single
-Riverpod provider override — no UI changes required. `Stream`-based reads let
+Scanner and Signals are environment-switched in their providers:
+`AppEnvironment.mock` uses `MockScannerService`/`MockSignalService`;
+development/production use `ApiScannerService`/`ApiSignalService` against the
+backend, which is the source of truth (lists poll and re-fetch after each
+approve/reject/edit). Against the backend, approving a setup is one server
+transaction that creates exactly one Signal; the app never calls
+`createFromSetup` outside mock mode. Scanner-published setups keep their
+detected symbol/timeframe/direction; the edit sheet only adjusts levels and
+notes. `Stream`-based reads let
 mocks fake push updates (via `Stream.periodic`/`StreamController`) the same
 shape a real backend (WebSocket/SSE/polling) would deliver.
 
