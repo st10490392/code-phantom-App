@@ -38,7 +38,11 @@ import 'backend_permission_mapping.dart';
 /// than surfacing a half-restored session.
 class ApiAuthService implements AuthService {
   ApiAuthService(this._client, this._tokenStorage, {String? authRedirectUrl})
-      : _authRedirectUrl = authRedirectUrl ?? ApiConfig.authRedirectUrl;
+      : _authRedirectUrl = authRedirectUrl ?? ApiConfig.authRedirectUrl {
+    // Lets every authenticated request refresh an expiring access token
+    // with the same single-flight refresh used at startup.
+    _client.sessionRefresher = _refresh;
+  }
 
   final ApiClient _client;
   final TokenStorage _tokenStorage;

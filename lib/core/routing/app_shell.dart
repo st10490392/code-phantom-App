@@ -55,12 +55,19 @@ class AppShell extends ConsumerWidget {
         bottomNavigationBar: NavigationBar(
           selectedIndex: currentIndex,
           onDestinationSelected: select,
+          // Staff accounts can have up to eight destinations; on a phone
+          // their labels would wrap mid-word, so show icons (with tooltips)
+          // instead. Five or fewer keep their labels.
+          labelBehavior: visible.length > 5
+              ? NavigationDestinationLabelBehavior.alwaysHide
+              : NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
             for (final d in visible)
               NavigationDestination(
                 icon: Icon(d.icon),
                 selectedIcon: Icon(d.selectedIcon),
                 label: d.label,
+                tooltip: d.label,
               ),
           ],
         ),

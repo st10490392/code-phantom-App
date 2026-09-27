@@ -1,0 +1,70 @@
+name: Build Web Staging
+
+# Builds the CodePhantom web app (Flutter web / PWA) against the staging
+# backend exactly as the Railway web service does (deploy/web/Dockerfile),
+# and uploads it as an artifact. Deployment itself happens on Railway when
+# the web service's watched branch changes (docs/WEB.md). Only public
+# configuration is used; no secrets are available to this workflow.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codephantom-app-dev-qn0faw
+    paths:
+      - "lib/**"
+      - "web/**"
+      - "assets/**"
+      - "deploy/web/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/workflows/build-web-staging.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-web-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: staging
+  API_BASE_URL: https://code-phantom-backend-staging.up.railway.app/api/v1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.5"
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+      - name: Check public build configuration
+        run: sh deploy/web/check_build_config.sh
+
+      - name: Build staging web app
+        run: >-
+          flutter build web --release --no-web-resources-cdn
+          --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=API_BASE_URL=${{ env.API_BASE_URL }}
+
+      - name: No source maps in the published bundle
+        run: |
+          find build/web -name '*.map' -delete
+          test -z "$(find build/web -name '*.map')"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codephantom-web-staging
+          path: build/web
+          if-no-files-found: error
+          retention-days: 7

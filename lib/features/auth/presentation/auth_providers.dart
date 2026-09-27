@@ -104,6 +104,17 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  /// The server rejected the session and it could not be refreshed (the
+  /// stored tokens are already cleared). The router sends the user to
+  /// sign-in, remembering the page they were on.
+  void sessionExpired() {
+    if (state.status != AuthStatus.authenticated) return;
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      errorMessage: 'Your session has expired. Please sign in again.',
+    );
+  }
+
   Future<void> logout() async {
     await _authService.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
@@ -157,9 +168,14 @@ class AuthController extends StateNotifier<AuthState> {
       _authService.resendVerificationEmail(email: email);
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(ref.watch(authServiceProvider)),
-);
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
+  final controller = AuthController(ref.watch(authServiceProvider));
+  if (ref.watch(appEnvironmentProvider) != AppEnvironment.mock) {
+    final sub = ref.watch(apiClientProvider).sessionExpired.listen((_) => controller.sessionExpired());
+    ref.onDispose(sub.cancel);
+  }
+  return controller;
+});
 
 final currentUserProvider = Provider<AuthUser?>(
   (ref) => ref.watch(authControllerProvider).user,

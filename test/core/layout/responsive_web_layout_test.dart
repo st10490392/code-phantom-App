@@ -122,6 +122,11 @@ void main() {
         expect(find.byType(NavigationBar), compact ? findsOneWidget : findsNothing, reason: route);
         expect(find.byType(NavigationRail), compact ? findsNothing : findsOneWidget, reason: route);
       }
+      if (compact) {
+        // OWNER has 8 destinations: icons only, so labels never wrap mid-word.
+        final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+        expect(bar.labelBehavior, NavigationDestinationLabelBehavior.alwaysHide);
+      }
       await _unmount(tester);
     });
 
