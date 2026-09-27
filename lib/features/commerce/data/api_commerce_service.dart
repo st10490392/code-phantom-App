@@ -24,6 +24,30 @@ class ApiCommerceService {
         .toList(growable: false);
   }
 
+  Future<List<CommercePurchase>> listPurchases() async {
+    final response = await _client.get('/commerce/purchases');
+    final rows = response['data'] as List? ?? const <dynamic>[];
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(CommercePurchase.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<List<CommerceSubscription>> listSubscriptions() async {
+    final response = await _client.get('/commerce/subscriptions');
+    final rows = response['data'] as List? ?? const <dynamic>[];
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(CommerceSubscription.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<String> subscriptionManageUrl(String id) async {
+    final response = await _client.post('/commerce/subscriptions/$id/manage');
+    final data = response['data'] as Map<String, dynamic>;
+    return data['url'] as String;
+  }
+
   Future<CheckoutSession> createCheckout({
     required String planCode,
     required String provider,
