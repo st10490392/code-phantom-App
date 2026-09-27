@@ -7,3 +7,10 @@ String relativeTime(DateTime time) {
   if (diff.inHours < 24) return '${diff.inHours}h ago';
   return '${diff.inDays}d ago';
 }
+
+/// Absolute UTC timestamp for audit-relevant times, e.g. "2026-09-26 10:00 UTC".
+String utcTimestamp(DateTime time) {
+  final t = time.toUtc();
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}:${two(t.minute)} UTC';
+}

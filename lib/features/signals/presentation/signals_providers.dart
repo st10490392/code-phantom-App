@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_environment.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/api_signal_service.dart';
 import '../data/mock_signal_service.dart';
 import '../data/signal_service.dart';
 import '../domain/signal.dart';
@@ -7,7 +10,16 @@ import '../domain/signal_performance_summary.dart';
 import '../publishing/mock_publishers.dart';
 import '../publishing/signal_publisher_service.dart';
 
-final signalServiceProvider = Provider<SignalService>((ref) => MockSignalService());
+/// MOCK → [MockSignalService]; DEVELOPMENT/PRODUCTION → [ApiSignalService].
+final signalServiceProvider = Provider<SignalService>((ref) {
+  switch (ref.watch(appEnvironmentProvider)) {
+    case AppEnvironment.mock:
+      return MockSignalService();
+    case AppEnvironment.development:
+    case AppEnvironment.production:
+      return ApiSignalService(ref.watch(apiClientProvider));
+  }
+});
 
 final signalPublisherServiceProvider = Provider<SignalPublisherService>(
   (ref) => CompositeSignalPublisher([

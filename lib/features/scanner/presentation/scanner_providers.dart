@@ -1,16 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_environment.dart';
 import '../../../core/permissions/permission.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../notifications/domain/app_notification.dart';
 import '../../notifications/presentation/notifications_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
+import '../data/api_scanner_service.dart';
 import '../data/mock_scanner_service.dart';
 import '../data/scanner_service.dart';
 import '../domain/scanner_enums.dart';
 import '../domain/scanner_setup.dart';
 
-/// Swap for `ApiScannerService` in Phase 3 — UI depends only on this provider.
-final scannerServiceProvider = Provider<ScannerService>((ref) => MockScannerService());
+/// MOCK → in-memory [MockScannerService] (tests, demos, `flutter run`
+/// without APP_ENV). DEVELOPMENT/PRODUCTION → [ApiScannerService] against
+/// the real backend, which is the source of truth for the review queue.
+/// The UI depends only on this provider.
+final scannerServiceProvider = Provider<ScannerService>((ref) {
+  switch (ref.watch(appEnvironmentProvider)) {
+    case AppEnvironment.mock:
+      return MockScannerService();
+    case AppEnvironment.development:
+    case AppEnvironment.production:
+      return ApiScannerService(ref.watch(apiClientProvider));
+  }
+});
 
 /// The single place that decides which setups a caller is allowed to see.
 ///
@@ -67,9 +80,11 @@ class ScannerAuthorizationException implements Exception {
 /// Orchestrates the full Approve/Reject/Edit workflow described in the
 /// brief so none of it is hard-coded into a widget:
 ///
-/// approve  → ScannerService.approve → SignalService.createFromSetup →
+/// approve  → ScannerService.approve → (mock only) SignalService.createFromSetup →
 ///            two NotificationService.notify() calls ("Setup approved",
-///            "Signal created from approved setup")
+///            "Signal created from approved setup"). Against the real
+///            backend the approval transaction itself creates exactly one
+///            Signal, so the client must not create another.
 /// reject   → ScannerService.reject (with a required reason) →
 ///            NotificationService.notify() ("Setup rejected")
 /// updateSetup → ScannerService.update (edit before approval)
@@ -94,7 +109,9 @@ class ScannerReviewController extends StateNotifier<AsyncValue<void>> {
               note: note,
               reviewedBy: _reviewerName,
             );
-        await _ref.read(signalServiceProvider).createFromSetup(approved);
+        if (_ref.read(appEnvironmentProvider) == AppEnvironment.mock) {
+          await _ref.read(signalServiceProvider).createFromSetup(approved);
+        }
         final now = DateTime.now();
         final notifications = _ref.read(notificationServiceProvider);
         await notifications.notify(AppNotification(
