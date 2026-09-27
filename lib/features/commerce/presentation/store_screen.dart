@@ -28,7 +28,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
     try {
       return NumberFormat.simpleCurrency(name: currency).format(amount / 100);
     } catch (_) {
-      return currency + ' ' + (amount / 100).toStringAsFixed(2);
+      return '$currency ${(amount / 100).toStringAsFixed(2)}';
     }
   }
 
@@ -220,16 +220,18 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                                           : () => _checkout(plan, method),
                                       child: Text(
                                         plan.isSubscription
-                                            ? 'Subscribe with ' + method.name
-                                            : 'Pay with ' + method.name,
+                                            ? 'Subscribe with ${method.name}'
+                                            : 'Pay with ${method.name}',
                                       ),
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.sm),
                                 ],
                                 if (paymentMethods
-                                    .where((item) =>
-                                        !plan.isSubscription || item.recurring)
+                                    .where(
+                                      (item) =>
+                                          !plan.isSubscription || item.recurring,
+                                    )
                                     .isEmpty)
                                   Text(
                                     'Checkout is not enabled for this plan yet.',
