@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/permissions/permission.dart';
+import '../../../core/config/app_environment.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../../core/permissions/permission_gate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -26,13 +28,20 @@ class EADashboardScreen extends ConsumerWidget {
       body: accountAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),
-        data: (account) => ListView(
+        data: (account) => account == null
+            ? const EmptyView(icon: Icons.monitor_heart_outlined,
+                message: 'No EA account connected yet.',)
+            : ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _StatusHeader(account: account),
             const SizedBox(height: AppSpacing.lg),
-            _MetricsGrid(account: account),
+            if (account.lastHeartbeat.millisecondsSinceEpoch == 0)
+              const PhantomCard(child: Text('Waiting for the EA to send its first heartbeat.'))
+            else
+              _MetricsGrid(account: account),
             const SizedBox(height: AppSpacing.lg),
+            if (ref.watch(appEnvironmentProvider) == AppEnvironment.mock)
             PermissionGate(
               permission: Permission.eaControl,
               child: PhantomButton(
@@ -109,13 +118,17 @@ class _MetricsGrid extends StatelessWidget {
           color: account.tradingEnabled ? AppColors.success : AppColors.mutedText,),
     ];
 
-    return GridView.count(
+    // Fixed tile height (not an aspect ratio) so tiles never clip on
+    // narrow phones; wider windows simply fit more columns.
+    return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: AppSpacing.md,
-      crossAxisSpacing: AppSpacing.md,
-      childAspectRatio: 2.4,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 260,
+        mainAxisExtent: 108,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+      ),
       children: [for (final t in tiles) _MetricTile(metric: t)],
     );
   }
@@ -141,9 +154,15 @@ class _MetricTile extends StatelessWidget {
         children: [
           Text(metric.label, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 4),
-          Text(
-            metric.value,
-            style: AppTypography.mono(fontSize: 16, color: metric.color ?? AppColors.ghostWhite),
+          // One line at any width: long balances shrink rather than wrap.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              metric.value,
+              maxLines: 1,
+              style: AppTypography.mono(fontSize: 16, color: metric.color ?? AppColors.ghostWhite),
+            ),
           ),
         ],
       ),

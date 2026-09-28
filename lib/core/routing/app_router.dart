@@ -1,7 +1,10 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/api_config.dart';
 import '../config/app_environment.dart';
+import '../layout/breakpoints.dart';
+import '../theme/app_colors.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/auth/presentation/auth_callback_screen.dart';
 import '../../features/auth/presentation/create_account_screen.dart';
@@ -40,15 +43,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final loggingIn = ['/login', '/forgot-password', '/register', '/verify-email']
           .contains(state.matchedLocation);
       final atSplash = state.matchedLocation == '/splash';
+      final atRoot = state.matchedLocation == '/';
+
+      // A browser refresh or pasted link starts at the requested page before
+      // the session is restored; remember it so the user lands back there
+      // (permission gates below still apply once they arrive).
+      final returnTo = (atSplash || loggingIn || atRoot)
+          ? safeReturnPath(state.uri.queryParameters['from'])
+          : state.uri.toString();
 
       if (authState.status == AuthStatus.unknown) {
-        return atSplash ? null : '/splash';
+        return atSplash ? null : _withReturn('/splash', returnTo);
       }
       if (authState.status == AuthStatus.unauthenticated) {
-        return loggingIn ? null : '/login';
+        return loggingIn ? null : _withReturn('/login', returnTo);
       }
       // authenticated
-      if (loggingIn || atSplash) return '/dashboard';
+      if (loggingIn || atSplash || atRoot) return returnTo ?? '/dashboard';
 
       final user = authState.user;
       final gate = permissionForPath(state.matchedLocation);
@@ -60,13 +71,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => AuthCallbackScreen(uri: state.uri),
+        builder: (context, state) => FormPage(child: AuthCallbackScreen(uri: state.uri)),
+      ),
+      GoRoute(
+        path: ApiConfig.webAuthCallbackPath,
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) =>
+              FormPage(child: AuthCallbackScreen(uri: ref.read(pendingWebAuthCallbackProvider) ?? state.uri)),
+        ),
       ),
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const FormPage(child: LoginScreen())),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        builder: (context, state) => const FormPage(child: ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/register',
@@ -75,7 +93,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => Consumer(
           builder: (context, ref, _) {
             final isMock = ref.watch(appEnvironmentProvider) == AppEnvironment.mock;
-            return isMock ? const RegisterPlaceholderScreen() : const CreateAccountScreen();
+            return FormPage(child: isMock ? const RegisterPlaceholderScreen() : const CreateAccountScreen());
           },
         ),
       ),
@@ -85,7 +103,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // login, if that attempt reported the account isn't verified yet).
         // In-app navigation still passes the email through extra; actual
         // verification links return through AuthCallbackScreen.
-        builder: (context, state) => VerifyEmailScreen(email: state.extra as String? ?? ''),
+        builder: (context, state) => FormPage(child: VerifyEmailScreen(email: state.extra as String? ?? '')),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -125,6 +143,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
+String _withReturn(String path, String? returnTo) =>
+    returnTo == null ? path : Uri(path: path, queryParameters: {'from': returnTo}).toString();
+
+/// A same-app path to return to after sign-in, or `null`. Only plain
+/// in-app paths are accepted (`/scanner/setup/42`); absolute URLs,
+/// protocol-relative `//host` values and auth/splash pages are refused so
+/// the parameter cannot redirect anywhere unexpected.
+String? safeReturnPath(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.contains('\\')) return null;
+  final uri = Uri.tryParse(raw);
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
+  const excluded = ['/', '/splash', '/login', '/register', '/forgot-password', '/verify-email', ApiConfig.webAuthCallbackPath];
+  if (excluded.contains(uri.path)) return null;
+  return raw;
+}
+
 /// The permission a route requires, or `null` if it's open to every
 /// authenticated user (Dashboard, Notifications, Settings). Used by the
 /// `redirect` guard above and unit-testable on its own — see
@@ -144,5 +179,21 @@ Permission? permissionForPath(String path) {
 class _AuthRefreshListenable extends ChangeNotifier {
   _AuthRefreshListenable(Ref ref) {
     ref.listen(authControllerProvider, (_, __) => notifyListeners());
+  }
+}
+
+/// Sign-in, registration and auth-callback pages: full screen on phones, a
+/// centred form-width column on tablets and desktop browsers.
+class FormPage extends StatelessWidget {
+  const FormPage({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.phantomBlack,
+      child: ContentWidth(maxWidth: ContentWidth.form, child: child),
+    );
   }
 }

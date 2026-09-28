@@ -49,7 +49,7 @@ jobs:
       - name: Build real-backend staging APK
         run: >-
           flutter build apk --debug
-          --dart-define=APP_ENV=production
+          --dart-define=APP_ENV=staging
           --dart-define=API_BASE_URL=https://code-phantom-backend-staging.up.railway.app/api/v1
 
       - name: Upload APK

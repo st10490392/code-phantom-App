@@ -10,16 +10,12 @@ import '../domain/signal_performance_summary.dart';
 import '../publishing/mock_publishers.dart';
 import '../publishing/signal_publisher_service.dart';
 
-/// MOCK → [MockSignalService]; DEVELOPMENT/PRODUCTION → [ApiSignalService].
-final signalServiceProvider = Provider<SignalService>((ref) {
-  switch (ref.watch(appEnvironmentProvider)) {
-    case AppEnvironment.mock:
-      return MockSignalService();
-    case AppEnvironment.development:
-    case AppEnvironment.production:
-      return ApiSignalService(ref.watch(apiClientProvider));
-  }
-});
+/// MOCK → [MockSignalService]; every connected environment → [ApiSignalService].
+final signalServiceProvider = Provider<SignalService>((ref) =>
+    ref.watch(appEnvironmentProvider) == AppEnvironment.mock
+        ? MockSignalService()
+        : ApiSignalService(ref.watch(apiClientProvider)),
+);
 
 final signalPublisherServiceProvider = Provider<SignalPublisherService>(
   (ref) => CompositeSignalPublisher([

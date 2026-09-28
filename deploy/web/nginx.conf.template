@@ -1,0 +1,58 @@
+# Rendered at container start by the nginx image (envsubst on ${PORT} and
+# ${API_ORIGIN} only; nginx's own $variables are left untouched).
+server {
+    listen ${PORT};
+    listen [::]:${PORT};
+    server_name _;
+    server_tokens off;
+
+    root /usr/share/nginx/html;
+    index index.html;
+    charset utf-8;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json application/wasm image/svg+xml;
+
+    # Security headers (repeated in each location because add_header in a
+    # location replaces inherited ones).
+    set $csp "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ${API_ORIGIN} https://fonts.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Files the build produced: served as-is; a missing file is a real 404,
+    # never the app shell.
+    location ~* \.(?:js|mjs|wasm|json|png|ico|svg|otf|ttf|woff2?|symbols|bin|frag|txt)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+    }
+
+    location = /cp_sw.js {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, no-store" always;
+        add_header Service-Worker-Allowed "/" always;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # Every app route (/login, /auth/callback, /scanner/setup/42, ...) is
+    # rendered by the Flutter app, so refreshes and pasted links work.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache" always;
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+    }
+}

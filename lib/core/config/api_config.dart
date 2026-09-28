@@ -28,7 +28,15 @@ import 'app_environment.dart';
 ///      Neither covers a physical phone on Wi-Fi — that always needs the
 ///      `API_BASE_URL` override above, since there is no generic alias for
 ///      "the developer's machine" from a physical device's network stack.
-///   3. [AppEnvironment.production]'s base URL is a placeholder until a
+///   3. [AppEnvironment.staging] has no fixed URL of its own by design — a
+///      staging deployment's host is provisioned per-repo (GitHub
+///      Environment variable, see `docs/RELEASE_ANDROID.md`), so a staging
+///      build must always supply `API_BASE_URL` explicitly. If it doesn't
+///      (e.g. a local `flutter run --dart-define=APP_ENV=staging` with no
+///      URL), this falls back to the same placeholder-style default as
+///      development so the app fails obviously (connection refused) rather
+///      than silently.
+///   4. [AppEnvironment.production]'s base URL is a placeholder until a
 ///      real production backend exists; set it (or pass `API_BASE_URL` at
 ///      build time) before ever shipping a production build.
 abstract final class ApiConfig {
@@ -36,6 +44,36 @@ abstract final class ApiConfig {
       AppEnvironment.fromString(const String.fromEnvironment('APP_ENV', defaultValue: 'mock'));
 
   static const String _explicitBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  static const String _explicitAuthRedirectUrl = String.fromEnvironment('AUTH_REDIRECT_URL');
+
+  /// Where Supabase auth emails (verification, password reset, email
+  /// change) send the user back to.
+  ///
+  /// - Android/iOS: the app's custom scheme `codephantom://auth-callback`.
+  /// - Web: an HTTPS page of the deployed web app, never the custom scheme.
+  ///   `--dart-define=AUTH_REDIRECT_URL=https://<web host>/auth/callback`
+  ///   pins it; otherwise it is derived from the page's own origin, so one
+  ///   build works on whichever host serves it. The backend only honours
+  ///   URLs on its `AUTH_REDIRECT_ALLOWLIST`.
+  static String get authRedirectUrl {
+    if (!kIsWeb) return mobileAuthRedirectUrl;
+    if (_explicitAuthRedirectUrl.isNotEmpty) return _explicitAuthRedirectUrl;
+    return webAuthRedirectUrlFor(Uri.base);
+  }
+
+  static const String mobileAuthRedirectUrl = 'codephantom://auth-callback';
+
+  /// Path of the web auth-callback route.
+  static const String webAuthCallbackPath = '/auth/callback';
+
+  static String webAuthRedirectUrlFor(Uri pageUrl) => '${pageUrl.origin}$webAuthCallbackPath';
+
+  /// Public build flag: `--dart-define=SCANNER_REVIEW_ACTIONS=true` turns on
+  /// the real Scanner approve/reject/edit calls. Off by default while the
+  /// Scanner backtest is unvalidated; the backend still requires
+  /// `scanner.review` for every action.
+  static const bool scannerReviewActionsEnabled = bool.fromEnvironment('SCANNER_REVIEW_ACTIONS');
 
   /// See the class doc for the placeholder note — this is intentionally
   /// not a real host. Override with `--dart-define=API_BASE_URL=...` for
@@ -47,6 +85,7 @@ abstract final class ApiConfig {
     return switch (environment) {
       AppEnvironment.mock => '',
       AppEnvironment.development => _developmentDefaultBaseUrl,
+      AppEnvironment.staging => _developmentDefaultBaseUrl,
       AppEnvironment.production => _productionBaseUrlPlaceholder,
     };
   }

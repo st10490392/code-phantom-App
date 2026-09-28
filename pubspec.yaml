@@ -38,10 +38,17 @@ dependencies:
   # points, used by the majority of production Flutter apps that talk to a
   # REST backend.
   dio: ^5.7.0
+  package_info_plus: ^9.0.1
 
   # Opens provider-hosted checkout outside the app so payment credentials
   # never touch CodePhantom's Flutter process.
   url_launcher: ^6.3.1
+
+  # Browser APIs for the web build only (history.replaceState for the auth
+  # callback, origin-scoped storage); used behind conditional imports.
+  web: ^1.1.1
+  flutter_web_plugins:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

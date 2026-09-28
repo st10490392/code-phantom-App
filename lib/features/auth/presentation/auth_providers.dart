@@ -31,8 +31,9 @@ final apiClientProvider = Provider<ApiClient>(
 final appEnvironmentProvider = Provider<AppEnvironment>((ref) => ApiConfig.environment);
 
 /// MOCK → `MockAuthService` (existing mock accounts, untouched).
-/// DEVELOPMENT/PRODUCTION → `ApiAuthService` against the real CodePhantom
-/// backend. This is the only provider that changes per environment —
+/// Every other environment → `ApiAuthService` against the real CodePhantom
+/// backend (which one is decided entirely by `ApiConfig.baseUrl`, not by
+/// this provider). This is the only provider that changes per environment —
 /// everything downstream (`AuthController`, `PermissionGate`, route
 /// guards, every screen) depends on the `AuthService` interface, not on
 /// which implementation is active.
@@ -41,6 +42,7 @@ final authServiceProvider = Provider<AuthService>((ref) {
     case AppEnvironment.mock:
       return MockAuthService(ref.watch(secureStorageProvider));
     case AppEnvironment.development:
+    case AppEnvironment.staging:
     case AppEnvironment.production:
       return ApiAuthService(ref.watch(apiClientProvider), ref.watch(tokenStorageProvider));
   }
@@ -102,6 +104,17 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  /// The server rejected the session and it could not be refreshed (the
+  /// stored tokens are already cleared). The router sends the user to
+  /// sign-in, remembering the page they were on.
+  void sessionExpired() {
+    if (state.status != AuthStatus.authenticated) return;
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      errorMessage: 'Your session has expired. Please sign in again.',
+    );
+  }
+
   Future<void> logout() async {
     await _authService.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
@@ -155,9 +168,14 @@ class AuthController extends StateNotifier<AuthState> {
       _authService.resendVerificationEmail(email: email);
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(ref.watch(authServiceProvider)),
-);
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
+  final controller = AuthController(ref.watch(authServiceProvider));
+  if (ref.watch(appEnvironmentProvider) != AppEnvironment.mock) {
+    final sub = ref.watch(apiClientProvider).sessionExpired.listen((_) => controller.sessionExpired());
+    ref.onDispose(sub.cancel);
+  }
+  return controller;
+});
 
 final currentUserProvider = Provider<AuthUser?>(
   (ref) => ref.watch(authControllerProvider).user,

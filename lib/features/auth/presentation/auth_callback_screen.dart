@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/config/api_config.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
 import 'auth_providers.dart';
 
+/// Mobile: `codephantom://auth-callback`. Web: the app's own
+/// `/auth/callback` page (see `ApiConfig.authRedirectUrl`).
 bool isCodePhantomAuthCallback(Uri uri) =>
-    uri.scheme.toLowerCase() == 'codephantom' &&
-    uri.host.toLowerCase() == 'auth-callback';
+    (uri.scheme.toLowerCase() == 'codephantom' && uri.host.toLowerCase() == 'auth-callback') ||
+    uri.path == ApiConfig.webAuthCallbackPath;
+
+/// Web only: the auth-callback URL as the browser first opened it, captured
+/// in `main()` before its `#fragment` (which carries Supabase tokens) is
+/// stripped from the address bar. Held in memory only and consumed once.
+final pendingWebAuthCallbackProvider = StateProvider<Uri?>((ref) => null);
 
 Map<String, String> authCallbackParameters(Uri uri) {
   final result = <String, String>{...uri.queryParameters};
@@ -41,6 +49,16 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
   String? _errorMessage;
 
   late final Map<String, String> _params = authCallbackParameters(widget.uri);
+
+  @override
+  void initState() {
+    super.initState();
+    // Consume the captured web callback: a later visit to /auth/callback
+    // (or a refresh) must not reuse its tokens.
+    Future.microtask(() {
+      if (mounted) ref.read(pendingWebAuthCallbackProvider.notifier).state = null;
+    });
+  }
 
   String get _type => _params['type']?.toLowerCase() ?? '';
   String? get _accessToken => _params['access_token'];

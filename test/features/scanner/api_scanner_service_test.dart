@@ -238,7 +238,7 @@ void main() {
     late ApiScannerService service;
     setUp(() async {
       backend = FakeBackend();
-      service = ApiScannerService(await clientFor(backend));
+      service = ApiScannerService(await clientFor(backend), actionsEnabled: true);
     });
 
     test('lists PENDING setups with the session token and backend status filter', () async {
@@ -314,6 +314,7 @@ void main() {
           appEnvironmentProvider.overrideWithValue(AppEnvironment.production),
           apiClientProvider.overrideWithValue(client),
           currentUserProvider.overrideWithValue(_owner),
+          scannerReviewActionsEnabledProvider.overrideWithValue(true),
         ],
       );
       addTearDown(container.dispose);
@@ -330,9 +331,9 @@ void main() {
       expect(backend.requests.where((r) => r.path.startsWith('/signals') && r.method != 'GET'), isEmpty);
       final signals = await container.read(signalServiceProvider).watchSignals().first;
       expect(signals.single.setupId, id);
-      expect(
-        () => container.read(signalServiceProvider).createFromSetup(ScannerSetup.fromBackendJson(backend.setup)),
-        throwsUnsupportedError,
+      await expectLater(
+        container.read(signalServiceProvider).createFromSetup(ScannerSetup.fromBackendJson(backend.setup)),
+        throwsA(isA<StateError>()),
       );
     });
 
@@ -343,6 +344,7 @@ void main() {
           appEnvironmentProvider.overrideWithValue(AppEnvironment.development),
           apiClientProvider.overrideWithValue(await clientFor(backend)),
           currentUserProvider.overrideWithValue(_owner),
+          scannerReviewActionsEnabledProvider.overrideWithValue(true),
         ],
       );
       addTearDown(container.dispose);
@@ -351,6 +353,25 @@ void main() {
           .reject(backend.setup['id'] as String, reason: 'Outside session');
       expect(backend.setup['status'], 'REJECTED');
       expect(jsonEncode(backend.where('POST', '/reject').single.data), '{"rejection_reason":"Outside session"}');
+      expect(backend.signals, isEmpty);
+    });
+
+    test('connected builds keep review actions paused unless SCANNER_REVIEW_ACTIONS is set', () async {
+      final backend = FakeBackend();
+      final container = ProviderContainer(
+        overrides: [
+          appEnvironmentProvider.overrideWithValue(AppEnvironment.production),
+          apiClientProvider.overrideWithValue(await clientFor(backend)),
+          currentUserProvider.overrideWithValue(_owner),
+        ],
+      );
+      addTearDown(container.dispose);
+      expect(container.read(scannerReviewActionsEnabledProvider), isFalse);
+      await expectLater(
+        container.read(scannerReviewControllerProvider.notifier).approve(backend.setup['id'] as String),
+        throwsA(isA<StateError>()),
+      );
+      expect(backend.where('POST', '/approve'), isEmpty);
       expect(backend.signals, isEmpty);
     });
 

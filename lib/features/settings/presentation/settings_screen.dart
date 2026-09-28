@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'about_screen.dart';
+import 'diagnostics_screen.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -50,6 +51,13 @@ class SettingsScreen extends ConsumerWidget {
             label: 'About CodePhantom',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.bug_report_outlined,
+            label: 'Diagnostics',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DiagnosticsScreen()),
             ),
           ),
           _SettingsTile(

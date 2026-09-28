@@ -13,7 +13,4 @@ class FakeSecureStorage implements SecureStorage {
 
   @override
   Future<void> delete(String key) async => _store.remove(key);
-
-  @override
-  Future<void> deleteAll() async => _store.clear();
 }

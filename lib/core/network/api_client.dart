@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import '../storage/token_storage.dart';
 import 'app_exceptions.dart';
@@ -33,8 +34,23 @@ class ApiClient {
 
   static const _timeout = Duration(seconds: 12);
 
+  /// Refresh this long before the stored expiry, so a request never leaves
+  /// with a token that expires in flight.
+  static const _refreshMargin = Duration(seconds: 30);
+
   final Dio _dio;
   final TokenStorage _tokenStorage;
+
+  /// Set by `ApiAuthService`: exchanges the stored refresh token for a new
+  /// access token (single-flight) or throws [SessionExpiredException].
+  Future<String> Function()? sessionRefresher;
+
+  final StreamController<void> _sessionExpired = StreamController<void>.broadcast();
+
+  /// Fires when an authenticated request finds the session unrecoverable
+  /// (refresh token rejected). The stored session has already been cleared;
+  /// `AuthController` listens and returns the user to sign-in.
+  Stream<void> get sessionExpired => _sessionExpired.stream;
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -65,6 +81,33 @@ class ApiClient {
   }) =>
       _request('PATCH', path, requiresAuth: requiresAuth, body: body);
 
+  /// Diagnostics only: hits the backend's unauthenticated liveness probe at
+  /// `<origin>/health` — NOT under the versioned `/api/v1` prefix every
+  /// other method here uses, so it's built from the configured base URL's
+  /// origin directly rather than going through `_request`. Used by the
+  /// in-app diagnostics screen to prove the app can actually reach the
+  /// configured backend, and to show what environment the backend itself
+  /// reports (`{ status, env, version, started_at }` — see
+  /// `code-phantom-backend`'s `src/modules/health/routes.ts`), independent
+  /// of what this build was compiled with. Never call this for anything
+  /// other than a manual connectivity check — no real service should ever
+  /// depend on it.
+  Future<Map<String, dynamic>> checkHealth() async {
+    final base = Uri.parse(_dio.options.baseUrl);
+    if (base.host.isEmpty) {
+      throw const NetworkException('No backend configured for this build (mock mode).');
+    }
+    final healthUri = base.replace(path: '/health');
+    try {
+      final response = await _dio.getUri<dynamic>(healthUri);
+      final data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      return <String, dynamic>{'data': data};
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> _request(
     String method,
     String path, {
@@ -73,26 +116,65 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool expectNoContent = false,
   }) async {
-    final headers = <String, dynamic>{};
-    if (requiresAuth) {
-      final token = await _tokenStorage.readAccessToken();
-      if (token == null) throw const SessionExpiredException();
-      headers['Authorization'] = 'Bearer $token';
+    Future<Map<String, dynamic>> send(String? token) async {
+      try {
+        final response = await _dio.request<dynamic>(
+          path,
+          data: body,
+          queryParameters: query,
+          options: Options(method: method, headers: {if (token != null) 'Authorization': 'Bearer $token'}),
+        );
+        if (expectNoContent) return const <String, dynamic>{};
+        final data = response.data;
+        if (data is Map<String, dynamic>) return data;
+        return <String, dynamic>{'data': data};
+      } on DioException catch (e) {
+        throw mapDioException(e);
+      }
     }
 
+    if (!requiresAuth) return send(null);
+
+    var token = await _currentAccessToken();
     try {
-      final response = await _dio.request<dynamic>(
-        path,
-        data: body,
-        queryParameters: query,
-        options: Options(method: method, headers: headers),
-      );
-      if (expectNoContent) return const <String, dynamic>{};
-      final data = response.data;
-      if (data is Map<String, dynamic>) return data;
-      return <String, dynamic>{'data': data};
-    } on DioException catch (e) {
-      throw mapDioException(e);
+      return await send(token);
+    } on AuthenticationException {
+      // 401 on a call made with a session: the access token was rejected
+      // (expired early, revoked, rotated). Refresh once and retry; this is
+      // never "wrong email or password".
+      if (sessionRefresher == null) throw const SessionExpiredException();
+      token = await _refreshOrExpire();
+      try {
+        return await send(token);
+      } on AuthenticationException {
+        await _expire();
+        throw const SessionExpiredException();
+      }
     }
+  }
+
+  Future<String> _currentAccessToken() async {
+    final token = await _tokenStorage.readAccessToken();
+    if (token == null) throw const SessionExpiredException();
+    if (sessionRefresher == null) return token;
+    final expiresAt = await _tokenStorage.readExpiresAt();
+    if (expiresAt != null && expiresAt.isBefore(DateTime.now().add(_refreshMargin))) {
+      return _refreshOrExpire();
+    }
+    return token;
+  }
+
+  Future<String> _refreshOrExpire() async {
+    try {
+      return await sessionRefresher!();
+    } on SessionExpiredException {
+      await _expire();
+      rethrow;
+    }
+  }
+
+  Future<void> _expire() async {
+    await _tokenStorage.clear();
+    _sessionExpired.add(null);
   }
 }

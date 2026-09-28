@@ -1,0 +1,11 @@
+# Railway service for the CodePhantom web app (staging or production).
+# Set the public build variables on the Railway service: APP_ENV,
+# API_BASE_URL and optionally AUTH_REDIRECT_URL / SCANNER_REVIEW_ACTIONS.
+# See docs/WEB.md "Deploying to Railway".
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deploy/web/Dockerfile"
+
+[deploy]
+healthcheckPath = "/healthz"
+restartPolicyType = "ON_FAILURE"
