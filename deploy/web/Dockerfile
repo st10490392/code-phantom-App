@@ -11,6 +11,7 @@
 #   SCANNER_REVIEW_ACTIONS true to enable Scanner approve/reject/edit
 #                          (default false while the backtest is unvalidated)
 
+
 FROM debian:bookworm-slim AS build
 ARG FLUTTER_VERSION=3.47.5
 RUN apt-get update \
@@ -21,10 +22,12 @@ RUN curl -fsSL "https://storage.googleapis.com/flutter_infra_release/releases/st
  && git config --global --add safe.directory /opt/flutter
 ENV PATH="/opt/flutter/bin:${PATH}"
 
+
 WORKDIR /app
-COPY pubspec.yaml pubspec.lock ./
+COPY pubspec.yaml ./
 RUN flutter pub get
 COPY . .
+
 
 ARG APP_ENV=staging
 ARG API_BASE_URL
@@ -38,6 +41,7 @@ RUN deploy/web/check_build_config.sh \
       --dart-define=SCANNER_REVIEW_ACTIONS="${SCANNER_REVIEW_ACTIONS}" \
  && find build/web -name '*.map' -delete \
  && echo "${API_BASE_URL}" | sed -E 's#^(https?://[^/]+).*#\1#' > /app/api_origin
+
 
 FROM nginx:1.27-alpine
 COPY deploy/web/nginx.conf.template /etc/nginx/templates/default.conf.template
