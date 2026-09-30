@@ -8,8 +8,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/brand_assets.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
-import '../../clients/presentation/clients_providers.dart';
-import '../../clients/domain/client_profile.dart';
 import '../../ea/presentation/ea_providers.dart';
 import '../../ea/domain/ea_enums.dart';
 import '../../notifications/presentation/notifications_providers.dart';
@@ -43,7 +41,6 @@ class DashboardScreen extends ConsumerWidget {
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
     final hasSignalsAccess = ref.watch(hasPermissionProvider(Permission.signalsAccess));
     final hasEaAccess = ref.watch(hasPermissionProvider(Permission.eaAccess));
-    final hasClientAdmin = ref.watch(hasPermissionProvider(Permission.clientAdmin));
 
     return Scaffold(
       body: ListView(
@@ -67,12 +64,6 @@ class DashboardScreen extends ConsumerWidget {
             Text('EA', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
             const _EASummary(),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          if (hasClientAdmin) ...[
-            Text('Clients', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            const _ClientsSummary(),
             const SizedBox(height: AppSpacing.xl),
           ],
           Text('Notifications', style: Theme.of(context).textTheme.titleMedium),
@@ -237,34 +228,6 @@ class _EASummary extends ConsumerWidget {
         ),
         _SummaryTile(label: 'Drawdown', value: '${account.dailyDrawdown.toStringAsFixed(1)}%'),
       ],),
-    );
-  }
-}
-
-class _ClientsSummary extends ConsumerWidget {
-  const _ClientsSummary();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clientsAsync = ref.watch(clientListProvider);
-    return clientsAsync.when(
-      loading: () => const LoadingView(),
-      error: (e, _) => ErrorView(message: '$e'),
-      data: (clients) {
-        final active = clients.where((c) => c.status == ClientAccountStatus.active).length;
-        final expiringSoon = clients.where((c) {
-          final expiry = c.licenceExpiry;
-          return expiry != null && expiry.isAfter(DateTime.now()) &&
-              expiry.difference(DateTime.now()).inDays <= 7;
-        }).length;
-        final disabled = clients.where((c) => c.status != ClientAccountStatus.active).length;
-
-        return _SummaryRow(tiles: [
-          _SummaryTile(label: 'Active', value: '$active', color: AppColors.success),
-          _SummaryTile(label: 'Expiring soon', value: '$expiringSoon', color: AppColors.warning),
-          _SummaryTile(label: 'Disabled/Suspended', value: '$disabled', color: AppColors.error),
-        ],);
-      },
     );
   }
 }
