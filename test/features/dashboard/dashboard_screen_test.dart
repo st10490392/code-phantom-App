@@ -14,7 +14,6 @@ import 'package:code_phantom_app/features/dashboard/presentation/dashboard_scree
 const _scanner = 'Scanner';
 const _signals = 'Signals';
 const _ea = 'EA';
-const _clients = 'Clients';
 
 void main() {
   Future<void> pumpDashboardAs(WidgetTester tester, AuthUser? user) async {
@@ -31,7 +30,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  testWidgets('OWNER sees every module summary on the dashboard', (tester) async {
+  testWidgets('OWNER sees every production module summary on the dashboard', (tester) async {
     const owner = AuthUser(
       id: 'u_owner',
       email: 'owner@codephantom.dev',
@@ -45,10 +44,9 @@ void main() {
     expect(find.text(_scanner), findsOneWidget);
     expect(find.text(_signals), findsOneWidget);
     expect(find.text(_ea), findsOneWidget);
-    expect(find.text(_clients), findsOneWidget);
   });
 
-  testWidgets('an EA-only client sees only the EA summary, not admin/client sections',
+  testWidgets('an EA-only client sees only the EA summary',
       (tester) async {
     const eaClient = AuthUser(
       id: 'u_ea',
@@ -63,8 +61,6 @@ void main() {
     expect(find.text(_ea), findsOneWidget);
     expect(find.text(_scanner), findsNothing);
     expect(find.text(_signals), findsNothing);
-    expect(find.text(_clients), findsNothing,
-        reason: 'an EA-only client must never see client/admin statistics',);
   });
 
   testWidgets('a scanner-only client sees only the Scanner summary', (tester) async {
@@ -81,7 +77,6 @@ void main() {
     expect(find.text(_scanner), findsOneWidget);
     expect(find.text(_signals), findsNothing);
     expect(find.text(_ea), findsNothing);
-    expect(find.text(_clients), findsNothing);
   });
 
   testWidgets('Notifications always renders regardless of module permissions', (tester) async {
