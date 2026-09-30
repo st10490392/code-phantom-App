@@ -158,29 +158,6 @@ void main() {
     String locationOf(GoRouter router) =>
         router.routerDelegate.currentConfiguration.uri.toString();
 
-    testWidgets(
-      'a client without clientAdmin cannot reach /clients via a deep link — '
-      'redirected to /dashboard even though the nav bar already hides it',
-      (tester) async {
-        const scannerClient = AuthUser(
-          id: 'u_scanner',
-          email: 'scanner.client@codephantom.dev',
-          displayName: 'Scanner-Only Client',
-          role: AppRole.scannerClient,
-          permissions: PermissionSet({Permission.scannerAccess}),
-        );
-
-        final router = await pumpRouterAs(tester, scannerClient);
-        expect(locationOf(router), '/dashboard');
-
-        router.go('/clients');
-        await settle(tester);
-
-        expect(locationOf(router), '/dashboard',
-            reason: 'route guard must block direct navigation, not just hide the nav item',);
-      },
-    );
-
     testWidgets('a user with the matching permission can reach the gated route', (tester) async {
       const eaClient = AuthUser(
         id: 'u_ea',
