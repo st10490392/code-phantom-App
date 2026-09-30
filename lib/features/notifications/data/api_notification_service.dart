@@ -37,7 +37,10 @@ class ApiNotificationService implements NotificationService {
 
   @override
   Future<void> notify(AppNotification notification) async {
-    throw StateError('Client-side notification creation is not supported.');
+    // Connected workflows create their authoritative notification on the
+    // backend. The controller's local notify hook therefore means "refresh"
+    // in a real build rather than creating a duplicate notification.
+    _changed.add(null);
   }
 }
 
