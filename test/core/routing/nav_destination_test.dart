@@ -34,8 +34,6 @@ void main() {
       expect(paths, {'/dashboard', '/scanner', '/notifications', '/settings'});
       expect(paths.contains('/signals'), isFalse);
       expect(paths.contains('/ea'), isFalse);
-      expect(paths.contains('/clients'), isFalse);
-      expect(paths.contains('/licences'), isFalse);
     });
 
     test('EA_CLIENT sees Dashboard, EA, Alerts, Settings only', () {
@@ -46,21 +44,23 @@ void main() {
 
     test('a user with an independently-granted permission sees that module '
         'even though their role does not default to it', () {
-      final trader = _userWith(
-        AppRole.trader,
-        defaultPermissionsFor(AppRole.trader).grant(Permission.clientAdmin),
+      final scannerClient = _userWith(
+        AppRole.scannerClient,
+        defaultPermissionsFor(AppRole.scannerClient).grant(Permission.eaAccess),
       );
-      final paths = visibleNavDestinationsFor(trader).map((d) => d.path).toSet();
-      expect(paths.contains('/clients'), isTrue,
+      final paths = visibleNavDestinationsFor(scannerClient).map((d) => d.path).toSet();
+      expect(paths.contains('/ea'), isTrue,
           reason: 'effective permissions, not role defaults, drive visibility',);
     });
 
-    test('ADMIN does not see EA (not in its default grant set)', () {
+    test('ADMIN sees shipped modules granted by its effective permissions only', () {
       final admin = _userWith(AppRole.admin, defaultPermissionsFor(AppRole.admin));
       final paths = visibleNavDestinationsFor(admin).map((d) => d.path).toSet();
+      expect(paths.contains('/scanner'), isTrue);
+      expect(paths.contains('/signals'), isTrue);
       expect(paths.contains('/ea'), isFalse);
-      expect(paths.contains('/clients'), isTrue);
-      expect(paths.contains('/licences'), isTrue);
+      expect(paths.contains('/clients'), isFalse);
+      expect(paths.contains('/licences'), isFalse);
     });
   });
 }
