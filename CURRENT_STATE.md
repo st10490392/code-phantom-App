@@ -31,7 +31,7 @@ and demos only.
 | Signals: publish / status changes | **DISABLED** | Paused until backtests pass. Signals are created only by the backend approval transaction. |
 | EA monitoring (accounts, status) | **REAL BACKEND** (read-only) | |
 | EA controls (pause/resume/risk/commands) | **DISABLED** | The App throws before any network call. The backend refuses to queue commands while `ea.remote_commands` is off (after merging backend `feature/web-pwa-cors`). |
-| Services & billing (store, purchases, subscriptions) | **REAL BACKEND**, payments **DISABLED** | Backend ships `PAYMENT_PROVIDER=none`, checkout flag off, plans unpriced. Activation is an **OWNER ACTION** after test-mode validation. |
+| Payments / billing | **NOT IN v1 APP** | Native store/checkout UI was deliberately removed for the first public release. Existing backend commerce remains disabled for a later version. |
 | Dashboard | Mixed | Scanner/Signals/EA tiles are real; client and notification tiles are mock. |
 | Notifications | **MOCK** | No backend service in the app yet. |
 | Clients (admin) | **MOCK** | |
@@ -84,8 +84,8 @@ and demos only.
 7. Confirm no real account uses a mock demo password (`docs/SECURITY_AUDIT.md`
    INFO-2).
 8. When the Scanner backtest is validated, build with
-   `SCANNER_REVIEW_ACTIONS=true`. Payments and `ea.remote_commands` stay off
-   until separately approved.
+   `SCANNER_REVIEW_ACTIONS=true`. `ea.remote_commands` stays off until
+   separately approved. Payments are intentionally absent from the v1 app.
 
 ## Security audit outcome
 
@@ -108,5 +108,6 @@ See `docs/SECURITY_AUDIT.md`:
    Vercel preview's portal sign-in and checkout against staging.
 3. Web session hardening: HttpOnly-cookie session for the web (APP-TOKEN).
 4. Replace the mock Notifications, Clients and Licences services with real
-   backend services.
+   backend services in a later admin-focused release; do not expose unfinished
+   payment functionality in v1.
 5. Shared rate-limit store before scaling the API horizontally (BE-RL).
