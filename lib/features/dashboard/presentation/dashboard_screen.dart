@@ -28,8 +28,8 @@ class DashboardScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
 
     // A CLIENT only sees onboarding while it truly has no paid/granted
-    // service access. Purchased account entitlements are translated into
-    // these UI permissions by the backend profile mapping.
+    // service access. Server-authoritative entitlements and grants are
+    // translated into these UI permissions by the backend profile mapping.
     final hasAnyClientService = user?.permissions.hasAny(const [
           Permission.scannerAccess,
           Permission.signalsAccess,
@@ -359,13 +359,6 @@ class _ClientOnboardingView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                PhantomButton(
-                  label: 'Browse services',
-                  expand: true,
-                  icon: Icons.shopping_bag_outlined,
-                  onPressed: () => context.push('/store'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
                 PhantomButton(
                   label: 'View profile',
                   variant: PhantomButtonVariant.secondary,
