@@ -68,7 +68,6 @@ const _shellRoutes = [
   '/settings',
   '/settings/about',
   '/settings/profile',
-  '/store',
 ];
 
 Future<GoRouter> _pumpApp(WidgetTester tester, Size size, {AuthUser? user, List<Override> overrides = const []}) async {
