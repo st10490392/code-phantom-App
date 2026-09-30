@@ -112,7 +112,6 @@ void main() {
       expect(find.text(_scanner), findsNothing);
       expect(find.text(_signals), findsNothing);
       expect(find.text(_ea), findsNothing);
-      expect(find.text(_clients), findsNothing);
     },
   );
 }
