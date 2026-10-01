@@ -51,6 +51,25 @@ class GeneratedActivationKey {
       );
 }
 
+class GeneratedDeviceBindingKey {
+  const GeneratedDeviceBindingKey({
+    required this.bindingKey,
+    required this.keyPrefix,
+    required this.expiresAt,
+  });
+
+  final String bindingKey;
+  final String keyPrefix;
+  final DateTime expiresAt;
+
+  factory GeneratedDeviceBindingKey.fromJson(Map<String, dynamic> json) =>
+      GeneratedDeviceBindingKey(
+        bindingKey: json['binding_key'] as String,
+        keyPrefix: json['key_prefix'] as String? ?? '—',
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+      );
+}
+
 class ActivationResult {
   const ActivationResult({
     required this.deviceId,
