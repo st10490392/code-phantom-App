@@ -4,16 +4,16 @@ import '../storage/secure_storage.dart';
 /// Privacy-preserving device identity for CodePhantom licensing.
 ///
 /// The installation id is random app data, not IMEI / Android ID / serial /
-/// MAC address. The backend hashes it before storage. After first activation,
-/// [serverDeviceId] is the backend-issued account_devices UUID sent on
-/// protected requests as X-CP-Device-Id.
+/// MAC address. The backend hashes it before storage. Backend-issued device
+/// ids are stored per account so signing into a different CodePhantom
+/// account on the same phone can never leak another account's device binding.
 class DeviceIdentityStore {
   DeviceIdentityStore(this._storage);
 
   final SecureStorage _storage;
 
   static const _installationIdKey = 'licensing_installation_id';
-  static const _serverDeviceIdKey = 'licensing_server_device_id';
+  static const _serverDeviceIdPrefix = 'licensing_server_device_id:';
 
   Future<String> getOrCreateInstallationId() async {
     final existing = await _storage.read(_installationIdKey);
@@ -23,12 +23,14 @@ class DeviceIdentityStore {
     return created;
   }
 
-  Future<String?> readServerDeviceId() => _storage.read(_serverDeviceIdKey);
+  Future<String?> readServerDeviceId(String userId) =>
+      _storage.read('$_serverDeviceIdPrefix$userId');
 
-  Future<void> saveServerDeviceId(String id) =>
-      _storage.write(_serverDeviceIdKey, id);
+  Future<void> saveServerDeviceId(String userId, String id) =>
+      _storage.write('$_serverDeviceIdPrefix$userId', id);
 
-  Future<void> clearServerDeviceId() => _storage.delete(_serverDeviceIdKey);
+  Future<void> clearServerDeviceId(String userId) =>
+      _storage.delete('$_serverDeviceIdPrefix$userId');
 
   static String _uuidV4() {
     final random = Random.secure();
