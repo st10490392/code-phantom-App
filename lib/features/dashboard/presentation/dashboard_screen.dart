@@ -11,6 +11,8 @@ import '../../ea/presentation/ea_providers.dart';
 import '../../ea/domain/ea_enums.dart';
 import '../../notifications/presentation/notifications_providers.dart';
 import '../../licensing/presentation/client_activation_view.dart';
+import '../../licensing/presentation/client_device_binding_required_view.dart';
+import '../../licensing/presentation/licensing_providers.dart';
 import '../../scanner/domain/scanner_enums.dart';
 import '../../scanner/presentation/scanner_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
@@ -36,6 +38,19 @@ class DashboardScreen extends ConsumerWidget {
         false;
     if (user?.role == AppRole.client && !hasAnyClientService) {
       return const ClientActivationView();
+    }
+
+    if (user?.role == AppRole.client && hasAnyClientService) {
+      final boundDevice = ref.watch(boundDeviceIdProvider(user!.id));
+      final gate = boundDevice.when(
+        loading: () => const Scaffold(body: LoadingView()),
+        error: (error, _) => Scaffold(
+          body: ErrorView(message: 'Could not verify this device.\n$error'),
+        ),
+        data: (deviceId) =>
+            deviceId == null ? const ClientDeviceBindingRequiredView() : null,
+      );
+      if (gate != null) return gate;
     }
 
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
