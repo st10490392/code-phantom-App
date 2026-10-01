@@ -144,8 +144,10 @@ class _OwnerLicencesScreenState extends ConsumerState<OwnerLicencesScreen> {
               itemCount: items.length,
               separatorBuilder: (_, __) =>
                   const SizedBox(height: AppSpacing.md),
-              itemBuilder: (context, index) =>
-                  _LicenceCard(licence: items[index]),
+              itemBuilder: (context, index) => _LicenceCard(
+                licence: items[index],
+                onChanged: () => ref.invalidate(ownerLicencesProvider),
+              ),
             );
           },
         ),
@@ -154,10 +156,14 @@ class _OwnerLicencesScreenState extends ConsumerState<OwnerLicencesScreen> {
   }
 }
 
-class _LicenceCard extends StatelessWidget {
-  const _LicenceCard({required this.licence});
+class _LicenceCard extends ConsumerWidget {
+  const _LicenceCard({
+    required this.licence,
+    required this.onChanged,
+  });
 
   final CoreLicence licence;
+  final VoidCallback onChanged;
 
   Color _statusColor(String status) => switch (status) {
         'ACTIVE' => AppColors.success,
@@ -169,7 +175,7 @@ class _LicenceCard extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return PhantomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,6 +213,75 @@ class _LicenceCard extends StatelessWidget {
             Text(
               'Redeemed ${licence.redeemedAt!.toLocal().toString().split(' ').first}',
               style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (licence.status != 'REVOKED') ...[
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                if (licence.status == 'ACTIVE')
+                  OutlinedButton(
+                    onPressed: () async {
+                      await ref
+                          .read(licensingServiceProvider)
+                          ?.suspendLicence(licence.id);
+                      onChanged();
+                    },
+                    child: const Text('Suspend'),
+                  ),
+                if (licence.status == 'SUSPENDED')
+                  OutlinedButton(
+                    onPressed: () async {
+                      await ref
+                          .read(licensingServiceProvider)
+                          ?.reinstateLicence(licence.id);
+                      onChanged();
+                    },
+                    child: const Text('Reinstate'),
+                  ),
+                TextButton(
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Revoke activation key?'),
+                            content: Text(
+                              licence.status == 'UNUSED'
+                                  ? 'This unused key will never be redeemable after revocation.'
+                                  : 'This licence and its bound devices will lose access. Revocation is permanent.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text(
+                                  'Revoke',
+                                  style: TextStyle(color: AppColors.error),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ) ??
+                        false;
+                    if (!confirmed) return;
+                    await ref
+                        .read(licensingServiceProvider)
+                        ?.revokeLicence(licence.id);
+                    onChanged();
+                  },
+                  child: const Text(
+                    'Revoke',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
