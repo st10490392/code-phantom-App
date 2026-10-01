@@ -115,6 +115,7 @@ void main() {
       expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
       expect(permissionForPath('/signals'), Permission.signalsAccess);
       expect(permissionForPath('/ea'), Permission.eaAccess);
+      expect(permissionForPath('/licences'), Permission.licenceAdmin);
     });
 
     test('always-open routes have no gate', () {
@@ -189,7 +190,7 @@ void main() {
         final router = await pumpRouterAs(tester, client);
         expect(locationOf(router), '/dashboard');
 
-        for (final path in ['/scanner', '/signals', '/ea']) {
+        for (final path in ['/scanner', '/signals', '/ea', '/licences']) {
           router.go(path);
           await settle(tester);
           expect(locationOf(router), '/dashboard',
@@ -209,7 +210,7 @@ void main() {
 
       final router = await pumpRouterAs(tester, owner);
 
-      for (final path in ['/scanner', '/signals', '/ea']) {
+      for (final path in ['/scanner', '/signals', '/ea', '/licences']) {
         router.go(path);
         await settle(tester);
         expect(locationOf(router), path, reason: 'OWNER must not be redirected away from $path');
