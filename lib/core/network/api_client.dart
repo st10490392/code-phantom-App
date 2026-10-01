@@ -20,8 +20,13 @@ import 'dio_error_mapper.dart';
 /// interceptor) — premature here, since there is only one caller to prove
 /// the design against.
 class ApiClient {
-  ApiClient({required String baseUrl, required TokenStorage tokenStorage, Dio? dio})
-      : _tokenStorage = tokenStorage,
+  ApiClient({
+    required String baseUrl,
+    required TokenStorage tokenStorage,
+    Future<String?> Function()? deviceIdProvider,
+    Dio? dio,
+  })  : _tokenStorage = tokenStorage,
+        _deviceIdProvider = deviceIdProvider,
         _dio = dio ??
             Dio(
               BaseOptions(
@@ -40,6 +45,7 @@ class ApiClient {
 
   final Dio _dio;
   final TokenStorage _tokenStorage;
+  final Future<String?> Function()? _deviceIdProvider;
 
   /// Set by `ApiAuthService`: exchanges the stored refresh token for a new
   /// access token (single-flight) or throws [SessionExpiredException].
@@ -118,11 +124,22 @@ class ApiClient {
   }) async {
     Future<Map<String, dynamic>> send(String? token) async {
       try {
+        final deviceId =
+            token != null && _deviceIdProvider != null
+                ? await _deviceIdProvider!()
+                : null;
         final response = await _dio.request<dynamic>(
           path,
           data: body,
           queryParameters: query,
-          options: Options(method: method, headers: {if (token != null) 'Authorization': 'Bearer $token'}),
+          options: Options(
+            method: method,
+            headers: {
+              if (token != null) 'Authorization': 'Bearer $token',
+              if (deviceId != null && deviceId.isNotEmpty)
+                'X-CP-Device-Id': deviceId,
+            },
+          ),
         );
         if (expectNoContent) return const <String, dynamic>{};
         final data = response.data;
