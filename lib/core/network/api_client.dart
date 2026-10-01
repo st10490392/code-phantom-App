@@ -126,7 +126,7 @@ class ApiClient {
       try {
         final deviceId =
             token != null && _deviceIdProvider != null
-                ? await _deviceIdProvider!()
+                ? await _deviceIdProvider()
                 : null;
         final response = await _dio.request<dynamic>(
           path,
