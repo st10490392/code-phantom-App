@@ -28,8 +28,11 @@ final apiClientProvider = Provider<ApiClient>(
   (ref) => ApiClient(
     baseUrl: ApiConfig.baseUrl,
     tokenStorage: ref.watch(tokenStorageProvider),
-    deviceIdProvider: () =>
-        ref.read(deviceIdentityProvider).readServerDeviceId(),
+    deviceIdProvider: () async {
+      final userId = await ref.read(tokenStorageProvider).readActiveUserId();
+      if (userId == null) return null;
+      return ref.read(deviceIdentityProvider).readServerDeviceId(userId);
+    },
   ),
 );
 
