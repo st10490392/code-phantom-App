@@ -40,6 +40,31 @@ class LicensingService {
     return ActivationResult(deviceId: deviceId, entitlements: entitlements);
   }
 
+  Future<String> rebindDevice(
+    String bindingKey, {
+    required String userId,
+  }) async {
+    final installationId = await _deviceIdentity.getOrCreateInstallationId();
+    final package = await PackageInfo.fromPlatform();
+    final response = await _client.post(
+      '/me/devices/rebind',
+      body: {
+        'binding_key': bindingKey.trim().toUpperCase(),
+        'device': {
+          'platform': _platform,
+          'installation_id': installationId,
+          'display_name': _platform == 'WEB' ? 'Web app' : 'CodePhantom app',
+          'app_version': '${package.version}+${package.buildNumber}',
+        },
+      },
+    );
+    final data = response['data'] as Map<String, dynamic>;
+    final device = data['device'] as Map<String, dynamic>;
+    final deviceId = device['id'] as String;
+    await _deviceIdentity.saveServerDeviceId(userId, deviceId);
+    return deviceId;
+  }
+
   Future<List<CoreLicence>> listLicences() async {
     final response = await _client.get(
       '/admin/platform/licences',
@@ -73,6 +98,23 @@ class LicensingService {
     );
   }
 
+
+  Future<GeneratedDeviceBindingKey> generateDeviceBindingKey({
+    required String userId,
+    required String identityVerification,
+    String reason = 'REPLACED_DEVICE',
+  }) async {
+    final response = await _client.post(
+      '/admin/platform/users/$userId/device-binding-keys',
+      body: {
+        'reason': reason,
+        'identity_verification': identityVerification.trim(),
+      },
+    );
+    return GeneratedDeviceBindingKey.fromJson(
+      response['data'] as Map<String, dynamic>,
+    );
+  }
 
   Future<void> suspendLicence(String licenceId) async {
     await _client.post(
