@@ -43,7 +43,11 @@ class _ClientActivationViewState extends ConsumerState<ClientActivationView> {
       if (service == null) {
         throw StateError('Licensing is unavailable in this build.');
       }
-      await service.activate(key);
+      final userId = ref.read(currentUserProvider)?.id;
+      if (userId == null) {
+        throw StateError('No signed-in account is available for activation.');
+      }
+      await service.activate(key, userId: userId);
       await ref.read(authControllerProvider.notifier).refreshAccount();
     } catch (error) {
       if (!mounted) return;
