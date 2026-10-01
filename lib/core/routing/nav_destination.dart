@@ -49,6 +49,13 @@ const List<NavDestination> primaryNavDestinations = [
     permission: Permission.eaAccess,
   ),
   NavDestination(
+    path: '/licences',
+    label: 'Keys',
+    icon: Icons.vpn_key_outlined,
+    selectedIcon: Icons.vpn_key,
+    permission: Permission.licenceAdmin,
+  ),
+  NavDestination(
     path: '/notifications',
     label: 'Alerts',
     icon: Icons.notifications_outlined,
