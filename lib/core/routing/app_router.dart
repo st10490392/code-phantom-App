@@ -13,11 +13,8 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_placeholder_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
-import '../../features/clients/presentation/client_list_screen.dart';
-import '../../features/commerce/presentation/store_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
-import '../../features/licences/presentation/licence_list_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
 import '../../features/scanner/presentation/setup_detail_screen.dart';
@@ -109,7 +106,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/store', builder: (context, state) => const StoreScreen()),
           GoRoute(
             path: '/scanner',
             builder: (context, state) => const ScannerScreen(),
@@ -123,8 +119,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
-          GoRoute(path: '/clients', builder: (context, state) => const ClientListScreen()),
-          GoRoute(path: '/licences', builder: (context, state) => const LicenceListScreen()),
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationCentreScreen(),
@@ -168,8 +162,6 @@ Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
   if (path.startsWith('/ea')) return Permission.eaAccess;
-  if (path.startsWith('/clients')) return Permission.clientAdmin;
-  if (path.startsWith('/licences')) return Permission.licenceAdmin;
   return null;
 }
 

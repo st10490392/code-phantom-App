@@ -8,8 +8,6 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/brand_assets.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
-import '../../clients/presentation/clients_providers.dart';
-import '../../clients/domain/client_profile.dart';
 import '../../ea/presentation/ea_providers.dart';
 import '../../ea/domain/ea_enums.dart';
 import '../../notifications/presentation/notifications_providers.dart';
@@ -28,8 +26,8 @@ class DashboardScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
 
     // A CLIENT only sees onboarding while it truly has no paid/granted
-    // service access. Purchased account entitlements are translated into
-    // these UI permissions by the backend profile mapping.
+    // service access. Server-authoritative entitlements and grants are
+    // translated into these UI permissions by the backend profile mapping.
     final hasAnyClientService = user?.permissions.hasAny(const [
           Permission.scannerAccess,
           Permission.signalsAccess,
@@ -43,7 +41,6 @@ class DashboardScreen extends ConsumerWidget {
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
     final hasSignalsAccess = ref.watch(hasPermissionProvider(Permission.signalsAccess));
     final hasEaAccess = ref.watch(hasPermissionProvider(Permission.eaAccess));
-    final hasClientAdmin = ref.watch(hasPermissionProvider(Permission.clientAdmin));
 
     return Scaffold(
       body: ListView(
@@ -67,12 +64,6 @@ class DashboardScreen extends ConsumerWidget {
             Text('EA', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
             const _EASummary(),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          if (hasClientAdmin) ...[
-            Text('Clients', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            const _ClientsSummary(),
             const SizedBox(height: AppSpacing.xl),
           ],
           Text('Notifications', style: Theme.of(context).textTheme.titleMedium),
@@ -241,34 +232,6 @@ class _EASummary extends ConsumerWidget {
   }
 }
 
-class _ClientsSummary extends ConsumerWidget {
-  const _ClientsSummary();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clientsAsync = ref.watch(clientListProvider);
-    return clientsAsync.when(
-      loading: () => const LoadingView(),
-      error: (e, _) => ErrorView(message: '$e'),
-      data: (clients) {
-        final active = clients.where((c) => c.status == ClientAccountStatus.active).length;
-        final expiringSoon = clients.where((c) {
-          final expiry = c.licenceExpiry;
-          return expiry != null && expiry.isAfter(DateTime.now()) &&
-              expiry.difference(DateTime.now()).inDays <= 7;
-        }).length;
-        final disabled = clients.where((c) => c.status != ClientAccountStatus.active).length;
-
-        return _SummaryRow(tiles: [
-          _SummaryTile(label: 'Active', value: '$active', color: AppColors.success),
-          _SummaryTile(label: 'Expiring soon', value: '$expiringSoon', color: AppColors.warning),
-          _SummaryTile(label: 'Disabled/Suspended', value: '$disabled', color: AppColors.error),
-        ],);
-      },
-    );
-  }
-}
-
 class _NotificationsSummary extends ConsumerWidget {
   const _NotificationsSummary();
 
@@ -359,13 +322,6 @@ class _ClientOnboardingView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                PhantomButton(
-                  label: 'Browse services',
-                  expand: true,
-                  icon: Icons.shopping_bag_outlined,
-                  onPressed: () => context.push('/store'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
                 PhantomButton(
                   label: 'View profile',
                   variant: PhantomButtonVariant.secondary,

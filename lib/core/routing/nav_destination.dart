@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/auth/domain/auth_user.dart';
 import '../permissions/permission.dart';
 
-/// Describes one of the 8 primary nav areas from the brief. `permission ==
+/// Describes the production-ready primary navigation areas. `permission ==
 /// null` means always visible (Dashboard, Notifications, Settings).
 class NavDestination {
   const NavDestination({
@@ -47,20 +47,6 @@ const List<NavDestination> primaryNavDestinations = [
     icon: Icons.memory_outlined,
     selectedIcon: Icons.memory,
     permission: Permission.eaAccess,
-  ),
-  NavDestination(
-    path: '/clients',
-    label: 'Clients',
-    icon: Icons.groups_outlined,
-    selectedIcon: Icons.groups,
-    permission: Permission.clientAdmin,
-  ),
-  NavDestination(
-    path: '/licences',
-    label: 'Licences',
-    icon: Icons.vpn_key_outlined,
-    selectedIcon: Icons.vpn_key,
-    permission: Permission.licenceAdmin,
   ),
   NavDestination(
     path: '/notifications',

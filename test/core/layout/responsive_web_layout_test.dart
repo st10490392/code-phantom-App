@@ -62,13 +62,10 @@ const _shellRoutes = [
   '/scanner',
   '/signals',
   '/ea',
-  '/clients',
-  '/licences',
   '/notifications',
   '/settings',
   '/settings/about',
   '/settings/profile',
-  '/store',
 ];
 
 Future<GoRouter> _pumpApp(WidgetTester tester, Size size, {AuthUser? user, List<Override> overrides = const []}) async {
@@ -123,7 +120,7 @@ void main() {
         expect(find.byType(NavigationRail), compact ? findsNothing : findsOneWidget, reason: route);
       }
       if (compact) {
-        // OWNER has 8 destinations: icons only, so labels never wrap mid-word.
+        // OWNER has more than five production destinations: icons only, so labels never wrap mid-word.
         final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
         expect(bar.labelBehavior, NavigationDestinationLabelBehavior.alwaysHide);
       }

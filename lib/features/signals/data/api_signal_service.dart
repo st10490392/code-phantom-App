@@ -47,14 +47,23 @@ class ApiSignalService implements SignalService {
   @override
   Future<SignalPerformanceSummary> performanceSummary() async {
     final closed = (await _list(null)).where((s) => s.status.isClosed).toList();
-    final wins = closed.where((s) => s.result == 'WIN').length;
-    final losses = closed.where((s) => s.result == 'LOSS').length;
-    final rValues = closed.map((s) => s.rMultiple ?? 0).toList();
+    final resolved = closed
+        .where((s) => s.result == 'WIN' || s.result == 'LOSS' || s.result == 'BREAKEVEN')
+        .toList();
+    final wins = resolved.where((s) => s.result == 'WIN').length;
+    final losses = resolved.where((s) => s.result == 'LOSS').length;
+    final decided = wins + losses;
+    final rValues = resolved
+        .where((s) => s.rMultiple != null)
+        .map((s) => s.rMultiple!)
+        .toList();
     return SignalPerformanceSummary(
-      totalSignals: closed.length,
+      totalSignals: resolved.length,
       wins: wins,
       losses: losses,
-      winRatePercent: closed.isEmpty ? 0 : (wins / closed.length) * 100,
+      // Ambiguous/PENDING outcomes and breakevens never get guessed into
+      // either side of the win-rate denominator.
+      winRatePercent: decided == 0 ? 0 : (wins / decided) * 100,
       averageRMultiple: rValues.isEmpty ? 0 : rValues.reduce((a, b) => a + b) / rValues.length,
     );
   }
