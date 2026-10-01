@@ -12,8 +12,29 @@ void main() {
     expect(
       first,
       matches(RegExp(
-        r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-      )),
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+    );
+  });
+
+  test('server device id is persisted separately from installation id', () async {
+    final store = DeviceIdentityStore(FakeSecureStorage());
+    final installation = await store.getOrCreateInstallationId();
+    await store.saveServerDeviceId('11111111-1111-4111-8111-111111111111');
+
+    expect(
+      await store.readServerDeviceId(),
+      '11111111-1111-4111-8111-111111111111',
+    );
+    expect(await store.getOrCreateInstallationId(), installation);
+
+    await store.clearServerDeviceId();
+    expect(await store.readServerDeviceId(), isNull);
+    expect(await store.getOrCreateInstallationId(), installation);
+  });
+}
+,
+      ),
+    ),
     );
   });
 
