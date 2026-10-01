@@ -1,10 +1,10 @@
 name: code_phantom_app
 description: >
-  CodePhantom Technologies mobile platform — scanner, signals, EA monitoring,
-  client & licence administration. Phase 1: mock services behind clean
-  interfaces; UI/UX and architecture only.
+  CodePhantom Technologies Scanner client and owner administration app with
+  account registration, one-time licence activation, device binding, reviewed
+  scanner setups and published signals.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
