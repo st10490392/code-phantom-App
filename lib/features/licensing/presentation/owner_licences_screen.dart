@@ -22,9 +22,11 @@ class _OwnerLicencesScreenState extends ConsumerState<OwnerLicencesScreen> {
   Future<void> _generateKey() async {
     setState(() => _generating = true);
     try {
-      final generated = await ref
-          .read(licensingServiceProvider)
-          .generateScannerKey(deviceLimit: 1);
+      final service = ref.read(licensingServiceProvider);
+      if (service == null) {
+        throw StateError('Licensing is unavailable in this build.');
+      }
+      final generated = await service.generateScannerKey(deviceLimit: 1);
       ref.invalidate(ownerLicencesProvider);
       if (!mounted) return;
       await _showGeneratedKey(generated);
