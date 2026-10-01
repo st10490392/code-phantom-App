@@ -11,6 +11,7 @@ import '../../auth/presentation/auth_providers.dart';
 import '../../ea/presentation/ea_providers.dart';
 import '../../ea/domain/ea_enums.dart';
 import '../../notifications/presentation/notifications_providers.dart';
+import '../../licensing/presentation/client_activation_view.dart';
 import '../../scanner/domain/scanner_enums.dart';
 import '../../scanner/presentation/scanner_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
@@ -35,7 +36,7 @@ class DashboardScreen extends ConsumerWidget {
         ]) ??
         false;
     if (user?.role == AppRole.client && !hasAnyClientService) {
-      return const _ClientOnboardingView();
+      return const ClientActivationView();
     }
 
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
@@ -270,69 +271,5 @@ class _NotificationsSummary extends ConsumerWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
-  }
-}
-
-/// Neutral home state for a CLIENT with no services enabled yet. Never
-/// implies the account owns Scanner/Signals/EA access it hasn't been
-/// granted — the account becomes useful the moment an OWNER/ADMIN grants a
-/// permission, which surfaces automatically on the next `/me` refresh
-/// (login, or restart) without any change needed here.
-class _ClientOnboardingView extends ConsumerWidget {
-  const _ClientOnboardingView();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.check_circle_outline, color: AppColors.success, size: 40),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Welcome to CodePhantom',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Your account is active.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                PhantomCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'No services are enabled on your account yet.',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'Scanner, Signals and EA access will appear here when enabled.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                PhantomButton(
-                  label: 'View profile',
-                  variant: PhantomButtonVariant.secondary,
-                  expand: true,
-                  onPressed: () => context.push('/settings/profile'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
