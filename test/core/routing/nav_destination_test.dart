@@ -60,7 +60,7 @@ void main() {
       expect(paths.contains('/signals'), isTrue);
       expect(paths.contains('/ea'), isFalse);
       expect(paths.contains('/clients'), isFalse);
-      expect(paths.contains('/licences'), isFalse);
+      expect(paths.contains('/licences'), isTrue);
     });
   });
 }
