@@ -244,7 +244,9 @@ class ApiAuthService implements AuthService {
   Future<AuthUser> _fetchProfile() async {
     final response = await _client.get('/me', requiresAuth: true);
     final data = response['data'] as Map<String, dynamic>;
-    return authUserFromApiProfile(data);
+    final user = authUserFromApiProfile(data);
+    await _tokenStorage.saveActiveUserId(user.id);
+    return user;
   }
 
   Future<void> _persistTokens(Map<String, dynamic> sessionData) {
