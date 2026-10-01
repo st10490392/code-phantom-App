@@ -102,7 +102,7 @@ class _ClientActivationViewState extends ConsumerState<ClientActivationView> {
                           enableSuggestions: false,
                           decoration: const InputDecoration(
                             labelText: 'Scanner activation key',
-                            hintText: 'CPA-XXXX-XXXX-XXXX-XXXX',
+                            hintText: 'CPA-XXXXX-XXXXX-XXXXX-XXXXX',
                             prefixIcon: Icon(Icons.key_outlined),
                           ),
                         ),
