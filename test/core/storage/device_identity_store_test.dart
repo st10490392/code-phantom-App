@@ -19,19 +19,34 @@ void main() {
     );
   });
 
-  test('server device id is persisted separately from installation id', () async {
+  test('server device ids are isolated per CodePhantom account', () async {
     final store = DeviceIdentityStore(FakeSecureStorage());
     final installation = await store.getOrCreateInstallationId();
-    await store.saveServerDeviceId('11111111-1111-4111-8111-111111111111');
+
+    await store.saveServerDeviceId(
+      'user-a',
+      '11111111-1111-4111-8111-111111111111',
+    );
+    await store.saveServerDeviceId(
+      'user-b',
+      '22222222-2222-4222-8222-222222222222',
+    );
 
     expect(
-      await store.readServerDeviceId(),
+      await store.readServerDeviceId('user-a'),
       '11111111-1111-4111-8111-111111111111',
+    );
+    expect(
+      await store.readServerDeviceId('user-b'),
+      '22222222-2222-4222-8222-222222222222',
     );
     expect(await store.getOrCreateInstallationId(), installation);
 
-    await store.clearServerDeviceId();
-    expect(await store.readServerDeviceId(), isNull);
-    expect(await store.getOrCreateInstallationId(), installation);
+    await store.clearServerDeviceId('user-a');
+    expect(await store.readServerDeviceId('user-a'), isNull);
+    expect(
+      await store.readServerDeviceId('user-b'),
+      '22222222-2222-4222-8222-222222222222',
+    );
   });
 }
