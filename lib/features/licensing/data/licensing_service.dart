@@ -10,7 +10,10 @@ class LicensingService {
   final ApiClient _client;
   final DeviceIdentityStore _deviceIdentity;
 
-  Future<ActivationResult> activate(String activationKey) async {
+  Future<ActivationResult> activate(
+    String activationKey, {
+    required String userId,
+  }) async {
     final installationId = await _deviceIdentity.getOrCreateInstallationId();
     final package = await PackageInfo.fromPlatform();
     final response = await _client.post(
@@ -28,7 +31,7 @@ class LicensingService {
     final data = response['data'] as Map<String, dynamic>;
     final device = data['device'] as Map<String, dynamic>;
     final deviceId = device['id'] as String;
-    await _deviceIdentity.saveServerDeviceId(deviceId);
+    await _deviceIdentity.saveServerDeviceId(userId, deviceId);
 
     final entitlements =
         ((data['entitlements_granted'] as List?) ?? const <dynamic>[])
