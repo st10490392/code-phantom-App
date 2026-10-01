@@ -7,11 +7,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
 import 'auth_providers.dart';
 
-/// Real self-service registration, shown only in DEVELOPMENT/PRODUCTION
-/// (`app_router.dart` keeps `RegisterPlaceholderScreen` for MOCK mode, which
-/// has no signup path). Role, permissions, and service entitlements are
-/// never chosen here — the backend assigns a new account `CLIENT` with zero
-/// grants, and an OWNER/ADMIN enables services later.
+/// Real self-service registration. v1 is intentionally a Scanner-first
+/// client app: public accounts select CPT Scanner as their requested service,
+/// but the selection never grants access. The backend still creates a CLIENT
+/// with zero privileges; the one-time owner-issued activation key is the
+/// authority that binds the device and grants Scanner/Signals entitlements.
 class CreateAccountScreen extends ConsumerStatefulWidget {
   const CreateAccountScreen({super.key});
 
@@ -125,6 +125,43 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                           (v == null || !_emailPattern.hasMatch(v.trim()))
                               ? 'Enter a valid email'
                               : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Service',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    PhantomCard(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.radar_outlined,
+                            color: AppColors.cyberBlue,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'CPT Scanner',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Selected for this account. A one-time activation key is required after sign-in.',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppColors.success,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     PhantomTextField(
