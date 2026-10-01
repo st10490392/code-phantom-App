@@ -106,6 +106,15 @@ void main() {
     );
   }
 
+  testWidgets('registration clearly selects CPT Scanner without granting access', (tester) async {
+    final service = _FakeAuthService();
+    await pumpCreateAccount(tester, service);
+
+    expect(find.text('Service'), findsOneWidget);
+    expect(find.text('CPT Scanner'), findsOneWidget);
+    expect(find.textContaining('one-time activation key'), findsOneWidget);
+  });
+
   testWidgets('signup success navigates to /verify-email with the registered email',
       (tester) async {
     final service = _FakeAuthService();
