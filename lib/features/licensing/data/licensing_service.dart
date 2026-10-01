@@ -70,6 +70,28 @@ class LicensingService {
     );
   }
 
+
+  Future<void> suspendLicence(String licenceId) async {
+    await _client.post(
+      '/admin/platform/licences/$licenceId/suspend',
+      body: {'reason': 'Suspended by CodePhantom owner from the app.'},
+    );
+  }
+
+  Future<void> reinstateLicence(String licenceId) async {
+    await _client.post(
+      '/admin/platform/licences/$licenceId/reinstate',
+      body: {'reason': 'Reinstated by CodePhantom owner from the app.'},
+    );
+  }
+
+  Future<void> revokeLicence(String licenceId) async {
+    await _client.post(
+      '/admin/platform/licences/$licenceId/revoke',
+      body: {'reason': 'Revoked by CodePhantom owner from the app.'},
+    );
+  }
+
   String get _platform {
     if (kIsWeb) return 'WEB';
     return switch (defaultTargetPlatform) {
