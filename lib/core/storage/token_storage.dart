@@ -17,6 +17,7 @@ class TokenStorage {
   static const _accessTokenKey = 'api_access_token';
   static const _refreshTokenKey = 'api_refresh_token';
   static const _expiresAtKey = 'api_expires_at';
+  static const _activeUserIdKey = 'api_active_user_id';
 
   Future<void> save({
     required String accessToken,
@@ -42,9 +43,15 @@ class TokenStorage {
 
   Future<bool> hasStoredSession() async => (await readAccessToken()) != null;
 
+  Future<void> saveActiveUserId(String userId) =>
+      _secureStorage.write(_activeUserIdKey, userId);
+
+  Future<String?> readActiveUserId() => _secureStorage.read(_activeUserIdKey);
+
   Future<void> clear() async {
     await _secureStorage.delete(_accessTokenKey);
     await _secureStorage.delete(_refreshTokenKey);
     await _secureStorage.delete(_expiresAtKey);
+    await _secureStorage.delete(_activeUserIdKey);
   }
 }

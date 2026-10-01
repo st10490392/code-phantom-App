@@ -106,13 +106,29 @@ void main() {
     );
   }
 
+  Future<void> submitForm(WidgetTester tester) async {
+    final button = find.text('Create account').last;
+    await tester.ensureVisible(button);
+    await tester.pump();
+    await tester.tap(button);
+  }
+
+  testWidgets('registration clearly selects CPT Scanner without granting access', (tester) async {
+    final service = _FakeAuthService();
+    await pumpCreateAccount(tester, service);
+
+    expect(find.text('Service'), findsOneWidget);
+    expect(find.text('CPT Scanner'), findsOneWidget);
+    expect(find.textContaining('one-time activation key'), findsOneWidget);
+  });
+
   testWidgets('signup success navigates to /verify-email with the registered email',
       (tester) async {
     final service = _FakeAuthService();
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester);
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -129,7 +145,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, username: '_bad_username_');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
 
     expect(
@@ -144,7 +160,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, username: 'New_Client');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -157,7 +173,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, email: 'not-an-email');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
 
     expect(find.text('Enter a valid email'), findsOneWidget);
@@ -169,7 +185,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, password: 'short1', confirmPassword: 'short1');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
 
     expect(find.text('Password must be at least 12 characters'), findsOneWidget);
@@ -181,7 +197,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, password: 'a-strong-password-123', confirmPassword: 'different-password-1');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
 
     expect(find.text('Passwords do not match'), findsOneWidget);
@@ -193,7 +209,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester, name: '   ');
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
 
     expect(find.text('Enter your name'), findsOneWidget);
@@ -211,7 +227,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester);
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -225,7 +241,7 @@ void main() {
     await pumpCreateAccount(tester, service);
 
     await fillForm(tester);
-    await tester.tap(find.text('Create account').last);
+    await submitForm(tester);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 

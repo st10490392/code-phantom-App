@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/storage/secure_storage.dart';
+import '../../../core/storage/device_identity_store.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/utilities/startup_trace.dart';
 import '../data/api_auth_service.dart';
@@ -19,8 +20,20 @@ final tokenStorageProvider = Provider<TokenStorage>(
   (ref) => TokenStorage(ref.watch(secureStorageProvider)),
 );
 
+final deviceIdentityProvider = Provider<DeviceIdentityStore>(
+  (ref) => DeviceIdentityStore(ref.watch(secureStorageProvider)),
+);
+
 final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(baseUrl: ApiConfig.baseUrl, tokenStorage: ref.watch(tokenStorageProvider)),
+  (ref) => ApiClient(
+    baseUrl: ApiConfig.baseUrl,
+    tokenStorage: ref.watch(tokenStorageProvider),
+    deviceIdProvider: () async {
+      final userId = await ref.read(tokenStorageProvider).readActiveUserId();
+      if (userId == null) return null;
+      return ref.read(deviceIdentityProvider).readServerDeviceId(userId);
+    },
+  ),
 );
 
 /// The environment this build/run is targeting. Defaults to

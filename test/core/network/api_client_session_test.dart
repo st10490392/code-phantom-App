@@ -39,6 +39,35 @@ void main() {
 
   String? authOf(RequestOptions o) => o.headers['Authorization'] as String?;
 
+  test('bound device id is attached only to authenticated requests', () async {
+    await storage.save(
+      accessToken: 'active',
+      refreshToken: 'refresh-active',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+    final dio = Dio(BaseOptions(baseUrl: 'http://test.local/api/v1'));
+    dio.httpClientAdapter = FakeHttpClientAdapter((o) {
+      requests.add(o);
+      return const FakeResponse(statusCode: 200, body: {'data': []});
+    });
+    final boundClient = ApiClient(
+      baseUrl: 'http://test.local/api/v1',
+      tokenStorage: storage,
+      deviceIdProvider: () async => '11111111-1111-4111-8111-111111111111',
+      dio: dio,
+    );
+
+    await boundClient.get('/scanner/setups');
+    expect(
+      requests.last.headers['X-CP-Device-Id'],
+      '11111111-1111-4111-8111-111111111111',
+    );
+
+    requests.clear();
+    await boundClient.get('/public/plans', requiresAuth: false);
+    expect(requests.last.headers.containsKey('X-CP-Device-Id'), isFalse);
+  });
+
   test('an access token about to expire is refreshed before the request is sent', () async {
     await storage.save(
       accessToken: 'old',

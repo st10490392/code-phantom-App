@@ -62,6 +62,7 @@ const _shellRoutes = [
   '/scanner',
   '/signals',
   '/ea',
+  '/licences',
   '/notifications',
   '/settings',
   '/settings/about',

@@ -16,6 +16,7 @@ import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
+import '../../features/licensing/presentation/owner_licences_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
 import '../../features/scanner/presentation/setup_detail_screen.dart';
 import '../../features/settings/presentation/about_screen.dart';
@@ -120,6 +121,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(
+            path: '/licences',
+            builder: (context, state) => const OwnerLicencesScreen(),
+          ),
+          GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationCentreScreen(),
           ),
@@ -162,6 +167,7 @@ Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
   if (path.startsWith('/ea')) return Permission.eaAccess;
+  if (path.startsWith('/licences')) return Permission.licenceAdmin;
   return null;
 }
 
