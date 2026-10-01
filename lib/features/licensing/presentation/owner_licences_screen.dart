@@ -165,6 +165,141 @@ class _LicenceCard extends ConsumerWidget {
   final CoreLicence licence;
   final VoidCallback onChanged;
 
+  Future<void> _issueReplacementKey(BuildContext context, WidgetRef ref) async {
+    final userId = licence.userId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This activation key has not been redeemed yet.')),
+      );
+      return;
+    }
+
+    final formKey = GlobalKey<FormState>();
+    final verificationController = TextEditingController();
+    final verification = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Issue replacement device key?'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Only issue this after verifying the account holder. Redeeming it will revoke the old device binding.',
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: verificationController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Identity verification note',
+                  hintText: 'How did you verify the account holder?',
+                ),
+                validator: (value) => (value?.trim().length ?? 0) < 3
+                    ? 'Record how identity was verified.'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.of(dialogContext).pop(verificationController.text.trim());
+            },
+            child: const Text('Issue key'),
+          ),
+        ],
+      ),
+    );
+    verificationController.dispose();
+    if (verification == null) return;
+
+    try {
+      final service = ref.read(licensingServiceProvider);
+      if (service == null) {
+        throw StateError('Licensing is unavailable in this build.');
+      }
+      final generated = await service.generateDeviceBindingKey(
+        userId: userId,
+        identityVerification: verification,
+      );
+      if (!context.mounted) return;
+      await _showReplacementKey(context, generated);
+    } catch (error) {
+      if (!context.mounted) return;
+      final message = error is AppException
+          ? error.message
+          : 'Could not issue a replacement device key.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _showReplacementKey(
+    BuildContext context,
+    GeneratedDeviceBindingKey generated,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Replacement device key generated'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Copy this key now. It is shown once and expires automatically.',
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            SelectableText(
+              generated.bindingKey,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontFamily: 'JetBrains Mono',
+                    color: AppColors.cyberBlue,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: generated.bindingKey));
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Replacement key copied.')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_outlined),
+              label: const Text('Copy replacement key'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Expires ${generated.expiresAt.toLocal()}',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('I saved the key'),
+          ),
+        ],
+      ),
+    );
+  }
   Color _statusColor(String status) => switch (status) {
         'ACTIVE' => AppColors.success,
         'UNUSED' => AppColors.cyberBlue,
@@ -221,6 +356,12 @@ class _LicenceCard extends ConsumerWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: [
+                if (licence.status == 'ACTIVE' && licence.userId != null)
+                  OutlinedButton.icon(
+                    onPressed: () => _issueReplacementKey(context, ref),
+                    icon: const Icon(Icons.phonelink_lock_outlined),
+                    label: const Text('Replacement key'),
+                  ),
                 if (licence.status == 'ACTIVE')
                   OutlinedButton(
                     onPressed: () async {
