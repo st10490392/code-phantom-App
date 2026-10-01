@@ -17,3 +17,12 @@ final ownerLicencesProvider = FutureProvider<List<CoreLicence>>((ref) async {
   if (service == null) return const <CoreLicence>[];
   return service.listLicences();
 });
+
+
+final boundDeviceIdProvider =
+    FutureProvider.family<String?, String>((ref, userId) async {
+  if (ref.watch(appEnvironmentProvider) == AppEnvironment.mock) {
+    return 'mock-device';
+  }
+  return ref.watch(deviceIdentityProvider).readServerDeviceId(userId);
+});
