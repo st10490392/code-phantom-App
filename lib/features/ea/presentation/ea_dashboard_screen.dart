@@ -41,7 +41,7 @@ class EADashboardScreen extends ConsumerWidget {
             else
               _MetricsGrid(account: account),
             const SizedBox(height: AppSpacing.lg),
-            if (ref.watch(appEnvironmentProvider) == AppEnvironment.mock)
+            if (ref.watch(appEnvironmentProvider) != AppEnvironment.production)
             PermissionGate(
               permission: Permission.eaControl,
               child: PhantomButton(

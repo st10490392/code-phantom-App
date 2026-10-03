@@ -59,18 +59,52 @@ class ApiEAService implements EAService, EAAccountService, EAControlService {
   double _number(Object? value) =>
       value == null ? 0 : value is num ? value.toDouble() : double.parse(value as String);
 
-  Never _paused() => throw StateError('EA controls are paused until backtests pass.');
+  Future<void> _command(
+    String accountId,
+    String commandType, {
+    Map<String, dynamic> payload = const {},
+  }) async {
+    await _client.post(
+      '/ea/accounts/${Uri.encodeComponent(accountId)}/commands',
+      body: {
+        'command_type': commandType,
+        'payload': payload,
+      },
+    );
+  }
 
   @override
-  Future<void> pauseTrading(String accountId) async => _paused();
+  Future<void> pauseTrading(String accountId) =>
+      _command(accountId, 'PAUSE_TRADING');
+
   @override
-  Future<void> resumeTrading(String accountId) async => _paused();
+  Future<void> resumeTrading(String accountId) =>
+      _command(accountId, 'RESUME_TRADING');
+
   @override
-  Future<void> setRiskMode(String accountId, RiskMode mode) async => _paused();
+  Future<void> setRiskMode(String accountId, RiskMode mode) =>
+      _command(
+        accountId,
+        'SET_RISK_MODE',
+        payload: {'risk_mode': mode.wireValue},
+      );
+
   @override
-  Future<void> setRiskPercentage(String accountId, double percentage) async => _paused();
+  Future<void> setRiskPercentage(String accountId, double percentage) =>
+      _command(
+        accountId,
+        'SET_RISK_PERCENTAGE',
+        payload: {
+          'risk_percentage': percentage,
+          if (percentage > 5) 'extreme_risk_acknowledged': true,
+        },
+      );
+
   @override
-  Future<void> disableNewEntries(String accountId) async => _paused();
+  Future<void> disableNewEntries(String accountId) =>
+      _command(accountId, 'DISABLE_NEW_ENTRIES');
+
   @override
-  Future<void> emergencyStop(String accountId) async => _paused();
+  Future<void> emergencyStop(String accountId) =>
+      _command(accountId, 'EMERGENCY_STOP');
 }
