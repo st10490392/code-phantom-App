@@ -145,7 +145,7 @@ void main() {
 
       await b.service.pauseTrading('ea_1');
       await b.service.resumeTrading('ea_1');
-      await b.service.setRiskMode('ea_1', RiskMode.standard);
+      await b.service.setRiskMode('ea_1', RiskMode.moderate);
       await b.service.setRiskPercentage('ea_1', 0.5);
       await b.service.disableNewEntries('ea_1');
       await b.service.emergencyStop('ea_1');
@@ -161,7 +161,7 @@ void main() {
           'EMERGENCY_STOP',
         ],
       );
-      expect(seen[2]['payload'], {'risk_mode': RiskMode.standard.wireValue});
+      expect(seen[2]['payload'], {'risk_mode': RiskMode.moderate.wireValue});
       expect(seen[3]['payload'], {'risk_percentage': 0.5});
       expect(seen[0]['payload'], isEmpty);
     });
