@@ -46,6 +46,20 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "brand"
+    productFlavors {
+        create("codephantom") {
+            dimension = "brand"
+            applicationId = "com.codephantom.app"
+            resValue("string", "app_name", "CodePhantom")
+        }
+        create("antagonistic") {
+            dimension = "brand"
+            applicationId = "com.codephantom.antagonistictrader"
+            resValue("string", "app_name", "Antagonistic Trader")
+        }
+    }
+
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {
