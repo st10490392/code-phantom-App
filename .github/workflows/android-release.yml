@@ -107,12 +107,12 @@ jobs:
           common="--release --obfuscate --split-debug-info=build/debug-info \
             --build-number=${{ github.run_number }} $name_arg \
             --dart-define=APP_ENV=$APP_ENV --dart-define=API_BASE_URL=$API_BASE_URL"
-          flutter build appbundle $common
-          flutter build apk $common
+          flutter build appbundle --flavor codephantom -t lib/main.dart $common
+          flutter build apk --flavor codephantom -t lib/main.dart $common
 
       - name: Refuse unsigned or debug-signed output
         run: |
-          apk=build/app/outputs/flutter-apk/app-release.apk
+          apk=build/app/outputs/flutter-apk/app-codephantom-release.apk
           apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           if [ -z "$apksigner" ]; then
             echo "::error::Android apksigner was not found in the SDK"; exit 1
@@ -133,7 +133,7 @@ jobs:
             echo "::error::Release APK is debug-signed"; exit 1
           fi
 
-          sha256sum build/app/outputs/bundle/release/app-release.aab "$apk" | tee SHA256SUMS.txt
+          sha256sum build/app/outputs/bundle/codephantomRelease/app-codephantom-release.aab "$apk" | tee SHA256SUMS.txt
 
       - name: Remove signing material
         if: always()
@@ -143,8 +143,8 @@ jobs:
         with:
           name: codephantom-android-${{ github.event_name == 'push' && 'production' || 'staging' }}-${{ github.run_number }}
           path: |
-            build/app/outputs/bundle/release/app-release.aab
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/codephantomRelease/app-codephantom-release.aab
+            build/app/outputs/flutter-apk/app-codephantom-release.apk
             SHA256SUMS.txt
           retention-days: 30
 
@@ -164,5 +164,5 @@ jobs:
           gh release view "${{ github.ref_name }}" >/dev/null 2>&1 \
             || gh release create "${{ github.ref_name }}" --draft --title "${{ github.ref_name }}" --notes "Android build ${{ github.run_number }}"
           gh release upload "${{ github.ref_name }}" \
-            build/app/outputs/bundle/release/app-release.aab \
-            build/app/outputs/flutter-apk/app-release.apk SHA256SUMS.txt --clobber
+            build/app/outputs/bundle/codephantomRelease/app-codephantom-release.aab \
+            build/app/outputs/flutter-apk/app-codephantom-release.apk SHA256SUMS.txt --clobber
