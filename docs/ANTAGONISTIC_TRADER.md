@@ -54,3 +54,21 @@ when host resources and account separation require it.
 - no founder strategy rules in the APK;
 - licence generation/revocation is server-side;
 - execution fails closed until strategy, account and entitlement are approved.
+
+## Build commands
+
+CodePhantom Android:
+
+```bash
+flutter run --flavor codephantom -t lib/main.dart
+flutter build apk --debug --flavor codephantom -t lib/main.dart
+```
+
+Antagonistic Trader Android:
+
+```bash
+flutter run --flavor antagonistic -t lib/main_antagonistic.dart
+flutter build apk --debug --flavor antagonistic -t lib/main_antagonistic.dart
+```
+
+The packages are distinct, so both Android apps can be installed on the same device. Their auth callback schemes are also distinct to prevent one app from intercepting the other's callback.
