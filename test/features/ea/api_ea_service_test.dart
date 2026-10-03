@@ -130,15 +130,40 @@ void main() {
     });
   });
 
-  group('ApiEAService trading controls — must stay disabled until backtests pass', () {
-    test('every control method throws instead of issuing a command', () async {
+  group('ApiEAService trading controls — backend command queue', () {
+    test('control methods issue only allow-listed EA commands', () async {
       final b = await _build();
-      await expectLater(b.service.pauseTrading('any'), throwsA(isA<StateError>()));
-      await expectLater(b.service.resumeTrading('any'), throwsA(isA<StateError>()));
-      await expectLater(b.service.setRiskMode('any', RiskMode.standard), throwsA(isA<StateError>()));
-      await expectLater(b.service.setRiskPercentage('any', 1), throwsA(isA<StateError>()));
-      await expectLater(b.service.disableNewEntries('any'), throwsA(isA<StateError>()));
-      await expectLater(b.service.emergencyStop('any'), throwsA(isA<StateError>()));
+      final seen = <Map<String, dynamic>>[];
+
+      b.mock('POST', '/ea/accounts/ea_1/commands', (options) {
+        seen.add(Map<String, dynamic>.from(options.data as Map));
+        return const FakeResponse(
+          statusCode: 201,
+          body: {'data': {'id': 'cmd_1', 'status': 'PENDING'}},
+        );
+      });
+
+      await b.service.pauseTrading('ea_1');
+      await b.service.resumeTrading('ea_1');
+      await b.service.setRiskMode('ea_1', RiskMode.standard);
+      await b.service.setRiskPercentage('ea_1', 0.5);
+      await b.service.disableNewEntries('ea_1');
+      await b.service.emergencyStop('ea_1');
+
+      expect(
+        seen.map((x) => x['command_type']),
+        [
+          'PAUSE_TRADING',
+          'RESUME_TRADING',
+          'SET_RISK_MODE',
+          'SET_RISK_PERCENTAGE',
+          'DISABLE_NEW_ENTRIES',
+          'EMERGENCY_STOP',
+        ],
+      );
+      expect(seen[2]['payload'], {'risk_mode': RiskMode.standard.wireValue});
+      expect(seen[3]['payload'], {'risk_percentage': 0.5});
+      expect(seen[0]['payload'], isEmpty);
     });
   });
 }
