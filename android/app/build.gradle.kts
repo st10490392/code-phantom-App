@@ -52,11 +52,13 @@ android {
             dimension = "brand"
             applicationId = "com.codephantom.app"
             resValue("string", "app_name", "CodePhantom")
+            manifestPlaceholders["authScheme"] = "codephantom"
         }
         create("antagonistic") {
             dimension = "brand"
             applicationId = "com.codephantom.antagonistictrader"
             resValue("string", "app_name", "Antagonistic Trader")
+            manifestPlaceholders["authScheme"] = "antagonistictrader"
         }
     }
 
