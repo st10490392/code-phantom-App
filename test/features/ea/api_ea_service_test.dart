@@ -77,7 +77,7 @@ void main() {
       expect(account.nickname, 'Client — Staging QA',
           reason: 'must reflect the real account_label from the backend row, not a fixture name',);
       expect(account.broker, 'Staging Broker Ltd');
-      expect(account.riskMode, RiskMode.propFirm);
+      expect(account.riskMode, RiskMode.prop);
       expect(account.balance, 25430.10);
       expect(account.equity, 25510.55);
       expect(account.status, EAConnectionStatus.online,
