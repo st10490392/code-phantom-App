@@ -94,7 +94,10 @@ class ApiEAService implements EAService, EAAccountService, EAControlService {
       _command(
         accountId,
         'SET_RISK_PERCENTAGE',
-        payload: {'risk_percentage': percentage},
+        payload: {
+          'risk_percentage': percentage,
+          if (percentage > 5) 'extreme_risk_acknowledged': true,
+        },
       );
 
   @override
