@@ -8,19 +8,25 @@ enum EAConnectionStatus {
 }
 
 enum RiskMode {
-  standard,
-  propFirm,
-  aggressive;
+  conservative,
+  moderate,
+  aggressive,
+  prop,
+  custom;
 
   String get wireValue => switch (this) {
-        RiskMode.standard => 'STANDARD',
-        RiskMode.propFirm => 'PROP_FIRM',
+        RiskMode.conservative => 'CONSERVATIVE',
+        RiskMode.moderate => 'MODERATE',
         RiskMode.aggressive => 'AGGRESSIVE',
+        RiskMode.prop => 'PROP',
+        RiskMode.custom => 'CUSTOM',
       };
 
   static RiskMode fromWire(String v) => switch (v) {
-        'PROP_FIRM' => RiskMode.propFirm,
+        'CONSERVATIVE' => RiskMode.conservative,
         'AGGRESSIVE' => RiskMode.aggressive,
-        _ => RiskMode.standard,
+        'PROP' || 'PROP_FIRM' => RiskMode.prop,
+        'CUSTOM' => RiskMode.custom,
+        _ => RiskMode.moderate,
       };
 }
