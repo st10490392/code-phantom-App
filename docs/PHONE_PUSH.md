@@ -27,7 +27,7 @@ The two native client config files are ignored. They must match the Dart public 
 
 ## Verification
 
-Run `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and `flutter build web --release --no-web-resources-cdn`. Existing Flutter CI runs these checks for draft PRs. Dependencies are pinned to published Firebase Core 4.15.0 and Messaging 16.7.0; minimum Dart is 3.6 (the existing CI Flutter version is newer). The repository's existing policy ignores pubspec.lock.
+Run `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and `flutter build web --release --no-web-resources-cdn`. Flutter CI runs these checks for draft PRs and now also builds iOS without signing on macOS. Dependencies are pinned to published Firebase Core 4.15.0 and Messaging 16.7.0; minimum Dart is 3.6 (the existing CI Flutter version is newer). The repository's existing policy ignores pubspec.lock.
 
 New fake-transport tests cover explicit consent, denial, authenticated registration, installation stability, token rotation, late callbacks, pending token lookup on logout, foreground/tap deduplication, cold-start taps, transient failure/resume, missing APNs token, offline opt-out cleanup, unsupported builds, and payload privacy. Widget regression tests prove customer detail hides strategy/hash metadata while staff still see diagnostics.
 

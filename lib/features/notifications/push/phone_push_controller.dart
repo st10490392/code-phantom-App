@@ -48,10 +48,19 @@ class PhonePushController extends ChangeNotifier {
     final transport = await createTransport!();
     if (_disposed) throw StateError('disposed');
     _transport = transport;
-    _subscriptions.add(transport.tokenRefresh.listen((token) {
-      final generation = _generation;
-      unawaited(_run(() => _register(generation, token: token)));
-    }));
+    _subscriptions.add(
+      transport.tokenRefresh.listen(
+        (token) {
+          final generation = _generation;
+          unawaited(_run(() => _register(generation, token: token)));
+        },
+        onError: (_) {
+          if (_disposed) return;
+          error = 'Unable to update phone alerts. Try again.';
+          notifyListeners();
+        },
+      ),
+    );
     void emit(PhoneAlert alert, Set<String> seen, StreamController<PhoneAlert> stream, {bool tap = false}) {
       if (_disposed || (!tap && (_user == null || !enabled)) || !seen.add(alert.eventId)) return;
       if (seen.length > 100) seen.remove(seen.first);
@@ -82,6 +91,7 @@ class PhonePushController extends ChangeNotifier {
     final transport = await _initialize();
     if (!await transport.permission(prompt: false)) {
       enabled = false;
+      await storage.write('push_enabled', 'false');
       await _unregister();
       return;
     }
@@ -90,10 +100,15 @@ class PhonePushController extends ChangeNotifier {
     final deviceId = await storage.read('account_device_id');
     if (generation != _generation || _user == null || !enabled) return;
     if (value == null) { error = 'Phone alerts are still connecting. Try again shortly.'; return; }
-    await api.post('/notifications/push/register', body: {
-      'installation_id': installation, 'token': value, 'platform': platform,
-      if (deviceId != null) 'device_id': deviceId,
-    });
+    await api.post(
+      '/notifications/push/register',
+      body: {
+        'installation_id': installation,
+        'token': value,
+        'platform': platform,
+        if (deviceId != null) 'device_id': deviceId,
+      },
+    );
   }
 
   Future<void> setUser(String? userId) {
@@ -104,6 +119,7 @@ class PhonePushController extends ChangeNotifier {
       enabled = await storage.read('push_enabled') == 'true';
       if (generation != _generation) return;
       if (userId == null) {
+        await storage.write('push_pending_unregister', 'true');
         if (_transport != null) await _transport!.deleteToken();
         return;
       }
@@ -153,7 +169,10 @@ class PhonePushController extends ChangeNotifier {
   Future<void> resume() {
     final generation = _generation;
     return _run(() async {
-      if (_user != null && !enabled && await storage.read('push_pending_unregister') == 'true') {
+      if (_user == null && await storage.read('push_pending_unregister') == 'true') {
+        final transport = await _initialize();
+        await transport.deleteToken();
+      } else if (_user != null && !enabled && await storage.read('push_pending_unregister') == 'true') {
         await _unregister();
       } else {
         await _register(generation);

@@ -24,26 +24,40 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
     super.initState();
     _push = ref.read(phonePushControllerProvider);
     WidgetsBinding.instance.addObserver(this);
-    ref.listenManual(authControllerProvider, (_, auth) {
-      unawaited(_push.setUser(auth.status == AuthStatus.authenticated ? auth.user?.id : null));
-    }, fireImmediately: true);
-    _subscriptions.add(_push.foreground.listen((alert) {
-      if (!mounted || ref.read(currentUserProvider) == null) return;
-      ref.invalidate(notificationListProvider);
-      ref.invalidate(signalsByStatusProvider);
-      ref.invalidate(activeSignalsProvider);
-      ref.invalidate(closedSignalsProvider);
-      ref.invalidate(signalPerformanceProvider);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(alert.title),
-        action: SnackBarAction(label: 'View', onPressed: () => ref.read(appRouterProvider).go('/notifications')),
-      ));
-    }));
-    _subscriptions.add(_push.opened.listen((_) {
-      if (!mounted) return;
-      ref.invalidate(notificationListProvider);
-      ref.read(appRouterProvider).go('/notifications');
-    }));
+    ref.listenManual(
+      authControllerProvider,
+      (_, auth) {
+        unawaited(_push.setUser(auth.status == AuthStatus.authenticated ? auth.user?.id : null));
+      },
+      fireImmediately: true,
+    );
+    _subscriptions.add(
+      _push.foreground.listen(
+        (alert) {
+          if (!mounted || ref.read(currentUserProvider) == null) return;
+          ref.invalidate(notificationListProvider);
+          ref.invalidate(signalsByStatusProvider);
+          ref.invalidate(activeSignalsProvider);
+          ref.invalidate(closedSignalsProvider);
+          ref.invalidate(signalPerformanceProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(alert.title),
+              action: SnackBarAction(label: 'View', onPressed: () => ref.read(appRouterProvider).go('/notifications')),
+            ),
+          );
+        },
+      ),
+    );
+    _subscriptions.add(
+      _push.opened.listen(
+        (_) {
+          if (!mounted) return;
+          ref.invalidate(notificationListProvider);
+          ref.read(appRouterProvider).go('/notifications');
+        },
+      ),
+    );
   }
 
   @override
@@ -70,16 +84,18 @@ class PhonePushSettings extends ConsumerWidget {
     if (!push.available) return const SizedBox.shrink();
     return AnimatedBuilder(
       animation: push,
-      builder: (context, _) => Column(children: [
-        SwitchListTile(
-          title: const Text('Phone alerts'),
-          subtitle: Text(push.error ?? 'New signals and take-profit or stop-loss results.'),
-          value: push.enabled,
-          onChanged: push.busy ? null : (value) => unawaited(value ? push.enable() : push.disable()),
-        ),
-        if (push.error != null && push.enabled)
-          TextButton(onPressed: push.busy ? null : () => unawaited(push.resume()), child: const Text('Retry')),
-      ]),
+      builder: (context, _) => Column(
+        children: [
+          SwitchListTile(
+            title: const Text('Phone alerts'),
+            subtitle: Text(push.error ?? 'New signals and take-profit or stop-loss results.'),
+            value: push.enabled,
+            onChanged: push.busy ? null : (value) => unawaited(value ? push.enable() : push.disable()),
+          ),
+          if (push.error != null && push.enabled)
+            TextButton(onPressed: push.busy ? null : () => unawaited(push.resume()), child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

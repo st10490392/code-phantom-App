@@ -73,6 +73,7 @@ class _SetupList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setupsAsync = ref.watch(setupsByStatusProvider(status));
+    final showDiagnostics = ref.watch(hasPermissionProvider(Permission.scannerReview));
 
     return setupsAsync.when(
       loading: () => const LoadingView(),
@@ -91,7 +92,7 @@ class _SetupList extends ConsumerWidget {
           itemBuilder: (context, i) {
             final setup = setups[i];
             return SetupCard(
-              showDiagnostics: ref.watch(hasPermissionProvider(Permission.scannerReview)),
+              showDiagnostics: showDiagnostics,
               setup: setup,
               onTap: () => context.push('/scanner/setup/${setup.id}'),
             );

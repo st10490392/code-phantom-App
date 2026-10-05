@@ -54,10 +54,12 @@ void main() {
   });
 
   testWidgets('customer detail omits strategy versions and hashes even from an old backend response', (tester) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [currentUserProvider.overrideWithValue(null)],
-      child: MaterialApp(home: Scaffold(body: SetupDetailBody(setup: setup))),
-    ));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUserProvider.overrideWithValue(null)],
+        child: MaterialApp(home: Scaffold(body: SetupDetailBody(setup: setup))),
+      ),
+    );
     await tester.pump();
     expect(find.text('DE40 · M30'), findsOneWidget);
     expect(find.text('19250.50000'), findsOneWidget);
