@@ -36,7 +36,7 @@ jobs:
       - run: flutter test
       # Debug build proves the Android project compiles; no secrets involved
       # and the app defaults to APP_ENV=mock (no backend).
-      - run: flutter build apk --debug
+      - run: flutter build apk --debug --flavor codephantom -t lib/main.dart
       # Web target (mock mode, no backend) must keep compiling too.
       - run: flutter build web --release --no-web-resources-cdn
 
