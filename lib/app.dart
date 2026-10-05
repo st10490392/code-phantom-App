@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/routing/app_router.dart';
+import 'features/notifications/push/phone_push_listener.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/brand_assets.dart';
 
@@ -23,6 +24,8 @@ class CodePhantomApp extends ConsumerWidget {
       darkTheme: theme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
+      builder: (context, child) => PhonePushListener(child: child ?? const SizedBox.shrink()),
     );
   }
 }
+

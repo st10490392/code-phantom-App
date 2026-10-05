@@ -7,6 +7,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Native resources allow notification delivery after the app process exits.
+// Firebase client config is environment-specific; mock/CI builds need no file.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Release signing. The keystore and its passwords are NEVER committed:
 // CI writes android/key.properties + the keystore from GitHub Environment
 // secrets (see .github/workflows/android-release.yml and
@@ -78,3 +84,4 @@ kotlin {
 flutter {
     source = "../.."
 }
+

@@ -7,7 +7,7 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -39,6 +39,10 @@ dependencies:
   # REST backend.
   dio: ^5.7.0
   package_info_plus: ^9.0.1
+
+  # Native phone push. Public Firebase client configuration only.
+  firebase_core: 4.15.0
+  firebase_messaging: 16.7.0
 
   # Browser APIs for the web build only (history.replaceState for the auth
   # callback, origin-scoped storage); used behind conditional imports.
@@ -96,3 +100,4 @@ flutter_launcher_icons:
   adaptive_icon_background: "#05070D"
   adaptive_icon_foreground: "assets/brand/icon_foreground.png"
   min_sdk_android: 21
+

@@ -91,6 +91,7 @@ class _SetupList extends ConsumerWidget {
           itemBuilder: (context, i) {
             final setup = setups[i];
             return SetupCard(
+              showDiagnostics: ref.watch(hasPermissionProvider(Permission.scannerReview)),
               setup: setup,
               onTap: () => context.push('/scanner/setup/${setup.id}'),
             );
@@ -100,3 +101,4 @@ class _SetupList extends ConsumerWidget {
     );
   }
 }
+
