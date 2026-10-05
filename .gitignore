@@ -65,3 +65,8 @@ build/
 
 # Coverage
 coverage/
+
+
+# Environment-specific Firebase client config (never server service accounts).
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist

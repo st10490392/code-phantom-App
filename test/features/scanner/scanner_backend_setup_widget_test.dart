@@ -53,6 +53,21 @@ void main() {
     expect(find.text('Reject'), findsOneWidget);
   });
 
+  testWidgets('customer detail omits strategy versions and hashes even from an old backend response', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentUserProvider.overrideWithValue(null)],
+        child: MaterialApp(home: Scaffold(body: SetupDetailBody(setup: setup))),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('DE40 · M30'), findsOneWidget);
+    expect(find.text('19250.50000'), findsOneWidget);
+    expect(find.text('CPT-007-v0.2.0'), findsNothing);
+    expect(find.textContaining('strategy_hash'), findsNothing);
+    expect(find.text('DE40-3422f253bcbbf392bec1'), findsNothing);
+  });
+
   testWidgets('editing a scanner-published setup cannot change its direction or timeframe', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -75,3 +90,4 @@ void main() {
     expect(find.widgetWithText(TextFormField, 'Stop loss'), findsOneWidget);
   });
 }
+

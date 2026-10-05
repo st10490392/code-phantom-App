@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../notifications/push/phone_push_listener.dart';
 import 'about_screen.dart';
 import 'diagnostics_screen.dart';
 import 'profile_screen.dart';
@@ -46,6 +47,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
+          const PhonePushSettings(),
           _SettingsTile(
             icon: Icons.info_outline,
             label: 'About CodePhantom',
@@ -102,3 +104,4 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
+
