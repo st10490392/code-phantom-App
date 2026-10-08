@@ -31,7 +31,7 @@ class GilgameshPanel extends ConsumerWidget {
               children: [
                 const Expanded(
                   child: Text(
-                    'CPT GILGAMESH EA',
+                    'CPT ENKIDU EA',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

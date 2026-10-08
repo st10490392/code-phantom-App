@@ -20,11 +20,18 @@ class FakePushTransport implements PushTransport {
   final messages = StreamController<PhoneAlert>.broadcast();
   final taps = StreamController<PhoneAlert>.broadcast();
   @override
-  Future<bool> permission({required bool prompt}) async { if (prompt) prompts++; return allowed; }
+  Future<bool> permission({required bool prompt}) async {
+    if (prompt) prompts++;
+    return allowed;
+  }
+
   @override
   Future<String?> token() => delayedToken?.future ?? Future.value(currentToken);
   @override
-  Future<void> deleteToken() async { deleted++; }
+  Future<void> deleteToken() async {
+    deleted++;
+  }
+
   @override
   Stream<String> get tokenRefresh => refresh.stream;
   @override
@@ -33,7 +40,11 @@ class FakePushTransport implements PushTransport {
   Stream<PhoneAlert> get opened => taps.stream;
   @override
   Future<PhoneAlert?> initialAlert() async => initial;
-  Future<void> close() async { await refresh.close(); await messages.close(); await taps.close(); }
+  Future<void> close() async {
+    await refresh.close();
+    await messages.close();
+    await taps.close();
+  }
 }
 
 const data = {
@@ -54,17 +65,32 @@ void main() {
     requests = [];
     offline = false;
     final tokens = TokenStorage(storage);
-    await tokens.save(accessToken: 'user-token', expiresAt: DateTime.now().add(const Duration(hours: 1)));
+    await tokens.save(
+        accessToken: 'user-token',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),);
     final dio = Dio(BaseOptions(baseUrl: 'https://backend.example/api/v1'));
     dio.httpClientAdapter = FakeHttpClientAdapter((options) {
       requests.add(options);
-      return offline ? const FakeResponse.networkFailure() : const FakeResponse(statusCode: 200, body: {'data': {'id': 'registered'}});
+      return offline
+          ? const FakeResponse.networkFailure()
+          : const FakeResponse(statusCode: 200, body: {
+              'data': {'id': 'registered'},
+            },);
     });
-    controller = PhonePushController(api: ApiClient(baseUrl: dio.options.baseUrl, tokenStorage: tokens, dio: dio), storage: storage, platform: 'ANDROID', createTransport: () async => transport);
+    controller = PhonePushController(
+        api: ApiClient(
+            baseUrl: dio.options.baseUrl, tokenStorage: tokens, dio: dio,),
+        storage: storage,
+        platform: 'ANDROID',
+        createTransport: () async => transport,);
   });
-  tearDown(() async { controller.dispose(); await transport.close(); });
+  tearDown(() async {
+    controller.dispose();
+    await transport.close();
+  });
 
-  test('restoring a session never prompts or registers without explicit opt-in', () async {
+  test('restoring a session never prompts or registers without explicit opt-in',
+      () async {
     await controller.setUser('user');
     expect(transport.prompts, 0);
     expect(requests, isEmpty);
@@ -73,51 +99,72 @@ void main() {
     final request = requests.single;
     expect(request.path, '/notifications/push/register');
     expect(request.headers['Authorization'], 'Bearer user-token');
-    expect((request.data as Map).keys.toSet(), {'installation_id', 'token', 'platform'});
-    expect(await storage.read('push_installation_id'), matches(RegExp(r'^[a-f0-9-]{36}$')));
+    expect((request.data as Map).keys.toSet(),
+        {'installation_id', 'token', 'platform'},);
+    expect(await storage.read('push_installation_id'),
+        matches(RegExp(r'^[a-f0-9-]{36}$')),);
   });
 
   test('denied permission creates no backend token registration', () async {
     transport.allowed = false;
-    await controller.setUser('user'); await controller.enable();
+    await controller.setUser('user');
+    await controller.enable();
     expect(controller.enabled, false);
     expect(requests, isEmpty);
     expect(controller.error, contains('phone settings'));
   });
 
-  test('foreground events deduplicate and taps retain a separate deduplication set', () async {
+  test(
+      'foreground events deduplicate and taps retain a separate deduplication set',
+      () async {
     transport.initial = PhoneAlert.parse(data);
     final opened = <PhoneAlert>[], foreground = <PhoneAlert>[];
-    final a = controller.opened.listen(opened.add), b = controller.foreground.listen(foreground.add);
-    await controller.setUser('user'); await controller.enable();
+    final a = controller.opened.listen(opened.add),
+        b = controller.foreground.listen(foreground.add);
+    await controller.setUser('user');
+    await controller.enable();
     final alert = PhoneAlert.parse(data)!;
-    transport.messages.add(alert); transport.messages.add(alert);
-    transport.taps.add(alert); transport.taps.add(alert);
+    transport.messages.add(alert);
+    transport.messages.add(alert);
+    transport.taps.add(alert);
+    transport.taps.add(alert);
     await Future<void>.delayed(Duration.zero);
-    expect(foreground.length, 1); expect(opened.length, 1);
-    expect(foreground.single.title, 'Take profit reached');
-    await a.cancel(); await b.cancel();
+    expect(foreground.length, 1);
+    expect(opened.length, 1);
+    expect(foreground.single.title, 'CPT Market Update · TP reached');
+    await a.cancel();
+    await b.cancel();
   });
 
-  test('refresh rotates the token with the same installation and optional verified device reference', () async {
+  test(
+      'refresh rotates the token with the same installation and optional verified device reference',
+      () async {
     await storage.write('account_device_id', 'device-id');
-    await controller.setUser('user'); await controller.enable();
+    await controller.setUser('user');
+    await controller.enable();
     final installation = (requests.single.data as Map)['installation_id'];
     transport.refresh.add('new-phone-token-123456');
-    await Future<void>.delayed(Duration.zero); await controller.resume();
-    final rotated = requests.where((r) => (r.data as Map)['token'] == 'new-phone-token-123456').single;
+    await Future<void>.delayed(Duration.zero);
+    await controller.resume();
+    final rotated = requests
+        .where((r) => (r.data as Map)['token'] == 'new-phone-token-123456')
+        .single;
     expect((rotated.data as Map)['installation_id'], installation);
     expect((rotated.data as Map)['device_id'], 'device-id');
   });
 
-  test('logout unregisters before clearing credentials and ignores later refresh callbacks', () async {
-    await controller.setUser('user'); await controller.enable();
+  test(
+      'logout unregisters before clearing credentials and ignores later refresh callbacks',
+      () async {
+    await controller.setUser('user');
+    await controller.enable();
     await controller.beforeLogout();
     expect(requests.last.path, '/notifications/push/unregister');
     expect(transport.deleted, 1);
     final count = requests.length;
     transport.refresh.add('late-phone-token-12345');
-    await Future<void>.delayed(Duration.zero); await controller.resume();
+    await Future<void>.delayed(Duration.zero);
+    await controller.resume();
     expect(requests.length, count);
   });
 
@@ -128,47 +175,76 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     final logout = controller.beforeLogout();
     transport.delayedToken!.complete('late-phone-token-12345');
-    await enabling; await logout;
+    await enabling;
+    await logout;
     expect(requests.where((r) => r.path.endsWith('/register')), isEmpty);
   });
 
-  test('transient registration failure is visible and retries on resume', () async {
+  test('transient registration failure is visible and retries on resume',
+      () async {
     await controller.setUser('user');
-    offline = true; await controller.enable();
+    offline = true;
+    await controller.enable();
     expect(controller.error, contains('Try again'));
-    offline = false; await controller.resume();
+    offline = false;
+    await controller.resume();
     expect(controller.error, isNull);
     expect(requests.last.path, '/notifications/push/register');
   });
 
-  test('offline opt-out deletes the local token and retries server unregister on resume', () async {
-    await controller.setUser('user'); await controller.enable();
-    offline = true; await controller.disable();
-    expect(controller.enabled, false); expect(transport.deleted, 1);
+  test(
+      'offline opt-out deletes the local token and retries server unregister on resume',
+      () async {
+    await controller.setUser('user');
+    await controller.enable();
+    offline = true;
+    await controller.disable();
+    expect(controller.enabled, false);
+    expect(transport.deleted, 1);
     expect(await storage.read('push_pending_unregister'), 'true');
-    offline = false; await controller.resume();
+    offline = false;
+    await controller.resume();
     expect(requests.last.path, '/notifications/push/unregister');
     expect(await storage.read('push_pending_unregister'), isNull);
   });
 
   test('missing APNs/FCM token does not post null and retries later', () async {
     transport.currentToken = null;
-    await controller.setUser('user'); await controller.enable();
-    expect(requests, isEmpty); expect(controller.error, contains('connecting'));
+    await controller.setUser('user');
+    await controller.enable();
+    expect(requests, isEmpty);
+    expect(controller.error, contains('connecting'));
     transport.currentToken = 'ready-phone-token-123456';
-    await controller.resume(); expect(requests.length, 1);
+    await controller.resume();
+    expect(requests.length, 1);
   });
 
   test('unsupported/mock builds never initialize Firebase', () async {
     controller.dispose();
-    controller = PhonePushController(api: ApiClient(baseUrl: 'https://backend.example', tokenStorage: TokenStorage(storage)), storage: storage, platform: 'WEB', createTransport: null);
-    await controller.setUser('user'); await controller.enable();
-    expect(controller.available, false); expect(transport.prompts, 0); expect(requests, isEmpty);
+    controller = PhonePushController(
+        api: ApiClient(
+            baseUrl: 'https://backend.example',
+            tokenStorage: TokenStorage(storage),),
+        storage: storage,
+        platform: 'WEB',
+        createTransport: null,);
+    await controller.setUser('user');
+    await controller.enable();
+    expect(controller.available, false);
+    expect(transport.prompts, 0);
+    expect(requests, isEmpty);
   });
 
-  test('payload parsing never accepts arbitrary routes or displays metadata', () {
-    final alert = PhoneAlert.parse({...data, 'strategy': 'GILGAMESH', 'hash': 'private', 'title': 'private', 'route': 'https://evil.example'});
-    expect(alert!.title, 'Take profit reached');
+  test('payload parsing never accepts arbitrary routes or displays metadata',
+      () {
+    final alert = PhoneAlert.parse({
+      ...data,
+      'strategy': 'GILGAMESH',
+      'hash': 'private',
+      'title': 'private',
+      'route': 'https://evil.example',
+    });
+    expect(alert!.title, 'CPT Market Update · TP reached');
     expect(PhoneAlert.parse({...data, 'type': 'GILGAMESH'}), isNull);
     expect(PhoneAlert.parse({...data, 'event_id': '../admin'}), isNull);
   });

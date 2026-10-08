@@ -30,7 +30,8 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  testWidgets('OWNER sees every production module summary on the dashboard', (tester) async {
+  testWidgets('OWNER sees every production module summary on the dashboard',
+      (tester) async {
     const owner = AuthUser(
       id: 'u_owner',
       email: 'owner@codephantom.dev',
@@ -46,7 +47,7 @@ void main() {
     expect(find.text(_ea), findsOneWidget);
   });
 
-  testWidgets('an EA-only client sees only the EA summary',
+  testWidgets('an EA-only client cannot see private EA diagnostics',
       (tester) async {
     const eaClient = AuthUser(
       id: 'u_ea',
@@ -58,12 +59,13 @@ void main() {
 
     await pumpDashboardAs(tester, eaClient);
 
-    expect(find.text(_ea), findsOneWidget);
+    expect(find.text(_ea), findsNothing);
     expect(find.text(_scanner), findsNothing);
     expect(find.text(_signals), findsNothing);
   });
 
-  testWidgets('a scanner-only client sees only the Scanner summary', (tester) async {
+  testWidgets('a scanner-only client sees only the Scanner summary',
+      (tester) async {
     const scannerClient = AuthUser(
       id: 'u_scanner',
       email: 'scanner.client@codephantom.dev',
@@ -79,7 +81,8 @@ void main() {
     expect(find.text(_ea), findsNothing);
   });
 
-  testWidgets('Notifications always renders regardless of module permissions', (tester) async {
+  testWidgets('Notifications always renders regardless of module permissions',
+      (tester) async {
     const scannerClient = AuthUser(
       id: 'u_scanner',
       email: 'scanner.client@codephantom.dev',
@@ -108,7 +111,8 @@ void main() {
 
       expect(find.text('Welcome to CodePhantom'), findsOneWidget);
       expect(find.text('Your account is active.'), findsOneWidget);
-      expect(find.text('No services are enabled on your account yet.'), findsOneWidget);
+      expect(find.text('No services are enabled on your account yet.'),
+          findsOneWidget,);
       expect(find.text(_scanner), findsNothing);
       expect(find.text(_signals), findsNothing);
       expect(find.text(_ea), findsNothing);

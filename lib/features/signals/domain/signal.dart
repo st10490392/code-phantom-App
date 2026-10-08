@@ -4,6 +4,7 @@ class Signal {
   const Signal({
     required this.id,
     this.setupId,
+    this.timeframe,
     required this.symbol,
     required this.direction,
     required this.entry,
@@ -20,6 +21,7 @@ class Signal {
 
   final String id;
   final String? setupId;
+  final String? timeframe;
   final String symbol;
   final SetupDirection direction;
   final double entry;
@@ -35,10 +37,15 @@ class Signal {
   final double? rMultiple;
   final String? notes;
 
-  Signal copyWith({SignalStatus? status, DateTime? closedAt, String? result, double? rMultiple}) {
+  Signal copyWith(
+      {SignalStatus? status,
+      DateTime? closedAt,
+      String? result,
+      double? rMultiple,}) {
     return Signal(
       id: id,
       setupId: setupId,
+      timeframe: timeframe,
       symbol: symbol,
       direction: direction,
       entry: entry,
