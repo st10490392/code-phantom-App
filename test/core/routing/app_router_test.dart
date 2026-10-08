@@ -127,6 +127,7 @@ void main() {
       expect(permissionForPath('/scanner'), Permission.scannerAccess);
       expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
       expect(permissionForPath('/signals'), Permission.signalsAccess);
+      expect(permissionForPath('/signals/87654321-4321-4321-4321-210987654321'), Permission.signalsAccess);
       expect(permissionForPath('/ea'), Permission.systemAdmin);
     });
 
@@ -203,7 +204,7 @@ void main() {
         final router = await pumpRouterAs(tester, client);
         expect(locationOf(router), '/dashboard');
 
-        for (final path in ['/scanner', '/signals', '/ea']) {
+        for (final path in ['/scanner', '/signals', '/signals/87654321-4321-4321-4321-210987654321', '/ea']) {
           router.go(path);
           await settle(tester);
           expect(
