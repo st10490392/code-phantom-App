@@ -8,6 +8,7 @@ class PhoneAlert {
   final String eventId;
   final String signalId;
   final String type;
+  String get signalPath => '/signals/$signalId';
 
   String get title => switch (type) {
         'TP' => 'CPT Market Update · TP reached',

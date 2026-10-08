@@ -34,6 +34,8 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: python3 -m unittest discover -s scripts -p test_firebase_config.py
+      - run: node --test scripts/test_web_push.cjs
       # Debug build proves the Android project compiles; no secrets involved
       # and the app defaults to APP_ENV=mock (no backend).
       - run: flutter build apk --debug
