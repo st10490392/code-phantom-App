@@ -1,9 +1,6 @@
+import 'gilgamesh_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/permissions/permission.dart';
-import '../../../core/config/app_environment.dart';
-import '../../auth/presentation/auth_providers.dart';
-import '../../../core/permissions/permission_gate.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -11,7 +8,6 @@ import '../../../core/widgets/widgets.dart';
 import '../domain/ea_account.dart';
 import '../domain/ea_enums.dart';
 import 'ea_providers.dart';
-import 'risk_controls_sheet.dart';
 
 /// System-control interface, not a "flashy retail trading" screen — visual
 /// priority goes to status/metrics/risk, brand glow reserved for the header
@@ -24,35 +20,30 @@ class EADashboardScreen extends ConsumerWidget {
     final accountAsync = ref.watch(primaryEAAccountProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('EA Monitor')),
+      appBar: AppBar(title: const Text('CPT GILGAMESH EA')),
       body: accountAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),
         data: (account) => account == null
-            ? const EmptyView(icon: Icons.monitor_heart_outlined,
-                message: 'No EA account connected yet.',)
+            ? const SingleChildScrollView(child: GilgameshPanel())
             : ListView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          children: [
-            _StatusHeader(account: account),
-            const SizedBox(height: AppSpacing.lg),
-            if (account.lastHeartbeat.millisecondsSinceEpoch == 0)
-              const PhantomCard(child: Text('Waiting for the EA to send its first heartbeat.'))
-            else
-              _MetricsGrid(account: account),
-            const SizedBox(height: AppSpacing.lg),
-            if (ref.watch(appEnvironmentProvider) != AppEnvironment.production)
-            PermissionGate(
-              permission: Permission.eaControl,
-              child: PhantomButton(
-                label: 'Controls',
-                expand: true,
-                variant: PhantomButtonVariant.secondary,
-                onPressed: () => showRiskControlsSheet(context, account),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                children: [
+                  const GilgameshPanel(),
+                  const SizedBox(height: AppSpacing.lg),
+                  _StatusHeader(account: account),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (account.lastHeartbeat.millisecondsSinceEpoch == 0)
+                    const PhantomCard(
+                      child: Text(
+                        'Waiting for the EA to send its first heartbeat.',
+                      ),
+                    )
+                  else
+                    _MetricsGrid(account: account),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -81,8 +72,14 @@ class _StatusHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(account.nickname, style: Theme.of(context).textTheme.titleMedium),
-                Text(account.broker, style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  account.nickname,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  account.broker,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -114,8 +111,11 @@ class _MetricsGrid extends StatelessWidget {
       _Metric('Open trades', '${account.openTrades}'),
       _Metric('Risk mode', account.riskMode.wireValue.replaceAll('_', ' ')),
       _Metric('Risk %', '${account.riskPercentage.toStringAsFixed(2)}%'),
-      _Metric('Trading', account.tradingEnabled ? 'ENABLED' : 'DISABLED',
-          color: account.tradingEnabled ? AppColors.success : AppColors.mutedText,),
+      _Metric(
+        'Trading',
+        account.tradingEnabled ? 'ENABLED' : 'DISABLED',
+        color: account.tradingEnabled ? AppColors.success : AppColors.mutedText,
+      ),
     ];
 
     // Fixed tile height (not an aspect ratio) so tiles never clip on
@@ -161,7 +161,10 @@ class _MetricTile extends StatelessWidget {
             child: Text(
               metric.value,
               maxLines: 1,
-              style: AppTypography.mono(fontSize: 16, color: metric.color ?? AppColors.ghostWhite),
+              style: AppTypography.mono(
+                fontSize: 16,
+                color: metric.color ?? AppColors.ghostWhite,
+              ),
             ),
           ),
         ],

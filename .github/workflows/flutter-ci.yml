@@ -40,6 +40,20 @@ jobs:
       # Web target (mock mode, no backend) must keep compiling too.
       - run: flutter build web --release --no-web-resources-cdn
 
+      # Issue #15: reproducible staging artifacts, without deployment or signing secrets.
+      - name: Build verified staging DEMO artifacts
+        env:
+          API_BASE_URL: https://code-phantom-backend-staging.up.railway.app/api/v1
+        run: scripts/build_demo_staging.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gilgamesh-demo-staging
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/web/
+            build/demo-evidence/
+          retention-days: 7
+
 
   ios-build:
     runs-on: macos-15
