@@ -124,7 +124,7 @@ class PhonePushController extends ChangeNotifier {
   }
 
   Future<void> setUser(String? userId) {
-    if (_user == userId) return Future.value();
+    if (_user == userId) return userId == null ? resume() : Future.value();
     _seenForeground.clear();
     _seenOpened.clear();
     _user = userId;
@@ -133,6 +133,8 @@ class PhonePushController extends ChangeNotifier {
       enabled = await storage.read('push_enabled') == 'true';
       if (generation != _generation) return;
       if (userId == null) {
+        enabled = false;
+        await storage.write('push_enabled', 'false');
         await storage.write('push_pending_unregister', 'true');
         if (_transport != null) await _transport!.deleteToken();
         return;
@@ -176,8 +178,12 @@ class PhonePushController extends ChangeNotifier {
   /// Called before auth tokens are cleared, including all logout entry points.
   Future<void> beforeLogout() {
     _user = null;
+    enabled = false;
     ++_generation;
-    return _run(_unregister);
+    return _run(() async {
+      await storage.write('push_enabled', 'false');
+      await _unregister();
+    });
   }
 
   Future<void> resume() {

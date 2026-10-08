@@ -120,6 +120,15 @@ void main() {
     expect(controller.error, contains('phone settings'));
   });
 
+  test('anonymous cold start retries pending SDK token deletion without registering', () async {
+    await storage.write('push_pending_unregister', 'true');
+    await storage.write('push_enabled', 'false');
+    await controller.setUser(null);
+    expect(transport.deleted, 1);
+    expect(requests, isEmpty);
+    expect(controller.enabled, false);
+  });
+
   test('persisted foreground receipt suppresses restart duplicates but not taps', () async {
     await storage.write('push_seen_user_foreground', '["${data['event_id']}"]');
     final foreground = <PhoneAlert>[], opened = <PhoneAlert>[];
@@ -180,6 +189,8 @@ void main() {
     await controller.setUser('user');
     await controller.enable();
     await controller.beforeLogout();
+    expect(controller.enabled, false);
+    expect(await storage.read('push_enabled'), 'false');
     expect(requests.last.path, '/notifications/push/unregister');
     expect(transport.deleted, 1);
     final count = requests.length;

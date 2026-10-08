@@ -112,8 +112,11 @@ staging events or clearly labelled test fixtures, never fake trade outcomes.
    send-then-crash ambiguity is at-least-once, not an exactly-once guarantee.
 5. Token refresh/reinstall, app restart and session restore: stable installation
    on refresh; rotation invalidates older queued delivery revisions. Secure
-   logout unregisters before auth clearing and deletes the FCM token even offline;
-   late refresh callbacks do not restore the logged-out registration.
+   logout disables persisted opt-in, attempts unregister before auth clearing
+   and attempts SDK token deletion even if unregister fails. Pending cleanup
+   retries on anonymous cold start/resume; server revocation needs connectivity.
+   Previously accepted/in-flight OS alerts cannot be recalled. Late refresh
+   callbacks do not restore the logged-out registration.
 6. Revoke market/view/notification grant, expire licence, suspend user or revoke
    session before a queued send: no delivery. Tap an older notification afterward:
    unavailable/denied state, never cached private signal details. Test another
@@ -124,8 +127,9 @@ staging events or clearly labelled test fixtures, never fake trade outcomes.
    delivery depends on OS/browser background settings; record actual behavior.
 
 Unit tests/build artifacts cannot establish physical acceptance. Remaining
-owner actions are server credentials/IAM, protected release signing material,
-Web public configuration, authorized staging migration/deploy and real devices.
+owner actions are server credentials/IAM verification, Web public configuration,
+authorized staging migration/deploy and real devices. Protected release signing
+material was verified by the successful staging release build.
 
 Sources: [Firebase Flutter](https://firebase.google.com/docs/cloud-messaging/flutter/receive-messages),
 [HTTP v1 authorization](https://firebase.google.com/docs/cloud-messaging/send/v1-api),
