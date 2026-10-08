@@ -59,6 +59,7 @@ The worker rechecks session, account, licence/device policy and market grants
 immediately before sending. FCM acceptance is not phone delivery.
 
 Review backend #25 -> #26 -> companion Web registration migration in order.
+The companion migration is `20261008173502_web_push_registrations.sql`.
 Take and verify a staging DB backup, dry-run in a disposable database, confirm
 `/health` says staging and `/ready` has the new schema marker, then obtain owner
 authorization for migration/deploy. The new migration extends only the platform
