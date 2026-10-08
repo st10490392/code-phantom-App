@@ -40,7 +40,7 @@ class DashboardScreen extends ConsumerWidget {
 
     final hasScannerAccess = ref.watch(hasPermissionProvider(Permission.scannerAccess));
     final hasSignalsAccess = ref.watch(hasPermissionProvider(Permission.signalsAccess));
-    final hasEaAccess = ref.watch(hasPermissionProvider(Permission.eaAccess));
+    final hasEaAccess = ref.watch(hasPermissionProvider(Permission.systemAdmin));
 
     return Scaffold(
       body: ListView(

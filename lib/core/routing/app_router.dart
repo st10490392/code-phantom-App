@@ -161,7 +161,7 @@ String? safeReturnPath(String? raw) {
 Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
-  if (path.startsWith('/ea')) return Permission.eaAccess;
+  if (path.startsWith('/ea')) return Permission.systemAdmin;
   return null;
 }
 

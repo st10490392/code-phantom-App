@@ -17,6 +17,6 @@ abstract final class BrandAssets {
   static const String tagline = 'Engineering Intelligent Systems';
 
   /// Trading-facing sub-brand, used within Scanner/Signals/EA contexts only.
-  static const String tradingBrand = 'Phantom Traders';
+  static const String tradingBrand = 'CPT Market Direction';
   static const String scannerBrandLine = 'CPT Scanner · by CodePhantom Technologies';
 }

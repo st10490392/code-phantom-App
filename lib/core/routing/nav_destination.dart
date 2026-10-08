@@ -46,7 +46,7 @@ const List<NavDestination> primaryNavDestinations = [
     label: 'EA',
     icon: Icons.memory_outlined,
     selectedIcon: Icons.memory,
-    permission: Permission.eaAccess,
+    permission: Permission.systemAdmin,
   ),
   NavDestination(
     path: '/notifications',

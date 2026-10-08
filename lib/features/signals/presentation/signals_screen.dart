@@ -55,16 +55,35 @@ class _SignalList extends ConsumerWidget {
 
     return async.when(
       loading: () => const LoadingView(),
-      error: (e, _) => ErrorView(message: 'Could not load signals.\n$e'),
+      error: (e, _) => ErrorView(
+        message: 'Could not load signals. Please try again.',
+        onRetry: () {
+          ref.invalidate(activeSignalsProvider);
+          ref.invalidate(closedSignalsProvider);
+          ref.invalidate(signalsByStatusProvider(null));
+        },
+      ),
       data: (List<Signal> signals) {
         if (signals.isEmpty) {
-          return const EmptyView(icon: Icons.show_chart_outlined, message: 'No signals here yet.');
+          return const EmptyView(
+            icon: Icons.show_chart_outlined,
+            message: 'No signals here yet.',
+          );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: signals.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, i) => SignalCard(signal: signals[i]),
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(activeSignalsProvider);
+            ref.invalidate(closedSignalsProvider);
+            ref.invalidate(signalsByStatusProvider(null));
+            await ref.read(signalsByStatusProvider(null).future);
+          },
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: signals.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+            itemBuilder: (context, i) => SignalCard(signal: signals[i]),
+          ),
         );
       },
     );
@@ -79,7 +98,10 @@ class _PerformanceTab extends ConsumerWidget {
     final summaryAsync = ref.watch(signalPerformanceProvider);
     return summaryAsync.when(
       loading: () => const LoadingView(),
-      error: (e, _) => ErrorView(message: 'Could not load performance.\n$e'),
+      error: (e, _) => ErrorView(
+        message: 'Could not load signal outcomes. Please try again.',
+        onRetry: () => ref.invalidate(signalPerformanceProvider),
+      ),
       data: (summary) => ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
@@ -87,12 +109,27 @@ class _PerformanceTab extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Win / Loss', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Signal outcomes',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Text('${summary.wins} wins · ${summary.losses} losses'),
-                Text('Win rate: ${summary.winRatePercent.toStringAsFixed(1)}%'),
-                Text('Avg R multiple: ${summary.averageRMultiple.toStringAsFixed(2)}R'),
-                Text('Total closed signals: ${summary.totalSignals}'),
+                Text(
+                  summary.wins + summary.losses == 0
+                      ? 'Win rate: No resolved wins or losses'
+                      : 'Win rate: ${summary.winRatePercent.toStringAsFixed(1)}%',
+                ),
+                Text(
+                  'Avg R multiple: ${summary.averageRMultiple.toStringAsFixed(2)}R',
+                ),
+                Text('Resolved signal observations: ${summary.totalSignals}'),
+                const Text(
+                  'Latest 200 signals. Cancelled and unresolved outcomes are excluded. Breakevens are excluded from win rate.',
+                ),
+                const Text(
+                  'These are signal observations, not confirmed broker performance.',
+                ),
               ],
             ),
           ),

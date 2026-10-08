@@ -31,17 +31,20 @@ class _FixedAuthService implements AuthService {
       );
 
   @override
-  Future<AuthSession> login({required String email, required String password}) =>
+  Future<AuthSession> login(
+          {required String email, required String password,}) =>
       throw UnimplementedError();
 
   @override
   Future<void> logout() => throw UnimplementedError();
 
   @override
-  Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+  Future<void> requestPasswordReset({required String email}) =>
+      throw UnimplementedError();
 
   @override
-  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+  Future<void> confirmPasswordReset(
+          {required String accessToken, required String newPassword,}) =>
       throw UnimplementedError();
 
   @override
@@ -54,7 +57,8 @@ class _FixedAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
-  Future<void> resendVerificationEmail({required String email}) => throw UnimplementedError();
+  Future<void> resendVerificationEmail({required String email}) =>
+      throw UnimplementedError();
 }
 
 /// Always unauthenticated — for exercising pre-login routes (`/register`)
@@ -64,17 +68,20 @@ class _UnauthenticatedAuthService implements AuthService {
   Future<AuthSession?> restoreSession() async => null;
 
   @override
-  Future<AuthSession> login({required String email, required String password}) =>
+  Future<AuthSession> login(
+          {required String email, required String password,}) =>
       throw UnimplementedError();
 
   @override
   Future<void> logout() => throw UnimplementedError();
 
   @override
-  Future<void> requestPasswordReset({required String email}) => throw UnimplementedError();
+  Future<void> requestPasswordReset({required String email}) =>
+      throw UnimplementedError();
 
   @override
-  Future<void> confirmPasswordReset({required String accessToken, required String newPassword}) =>
+  Future<void> confirmPasswordReset(
+          {required String accessToken, required String newPassword,}) =>
       throw UnimplementedError();
 
   @override
@@ -87,22 +94,28 @@ class _UnauthenticatedAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
-  Future<void> resendVerificationEmail({required String email}) => throw UnimplementedError();
+  Future<void> resendVerificationEmail({required String email}) =>
+      throw UnimplementedError();
 }
 
 void main() {
   group('CodePhantom auth callback URI', () {
     test('recognizes the registered custom scheme and host', () {
       expect(
-        isCodePhantomAuthCallback(Uri.parse('codephantom://auth-callback#type=recovery')),
+        isCodePhantomAuthCallback(
+            Uri.parse('codephantom://auth-callback#type=recovery'),),
         isTrue,
       );
-      expect(isCodePhantomAuthCallback(Uri.parse('https://example.com/auth-callback')), isFalse);
+      expect(
+          isCodePhantomAuthCallback(
+              Uri.parse('https://example.com/auth-callback'),),
+          isFalse,);
     });
 
     test('parses Supabase callback values from the fragment', () {
       final params = authCallbackParameters(
-        Uri.parse('codephantom://auth-callback#access_token=abc123&type=recovery'),
+        Uri.parse(
+            'codephantom://auth-callback#access_token=abc123&type=recovery',),
       );
       expect(params['access_token'], 'abc123');
       expect(params['type'], 'recovery');
@@ -114,7 +127,7 @@ void main() {
       expect(permissionForPath('/scanner'), Permission.scannerAccess);
       expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
       expect(permissionForPath('/signals'), Permission.signalsAccess);
-      expect(permissionForPath('/ea'), Permission.eaAccess);
+      expect(permissionForPath('/ea'), Permission.systemAdmin);
     });
 
     test('always-open routes have no gate', () {
@@ -158,7 +171,8 @@ void main() {
     String locationOf(GoRouter router) =>
         router.routerDelegate.currentConfiguration.uri.toString();
 
-    testWidgets('a user with the matching permission can reach the gated route', (tester) async {
+    testWidgets('an EA customer cannot reach the private command centre',
+        (tester) async {
       const eaClient = AuthUser(
         id: 'u_ea',
         email: 'ea.client@codephantom.dev',
@@ -172,7 +186,7 @@ void main() {
       router.go('/ea');
       await settle(tester);
 
-      expect(locationOf(router), '/ea');
+      expect(locationOf(router), isNot('/ea'));
     });
 
     testWidgets(
@@ -192,13 +206,17 @@ void main() {
         for (final path in ['/scanner', '/signals', '/ea']) {
           router.go(path);
           await settle(tester);
-          expect(locationOf(router), '/dashboard',
-              reason: 'CLIENT with no grants must be redirected away from $path',);
+          expect(
+            locationOf(router),
+            '/dashboard',
+            reason: 'CLIENT with no grants must be redirected away from $path',
+          );
         }
       },
     );
 
-    testWidgets('OWNER can reach every gated route regardless of stored grants', (tester) async {
+    testWidgets('OWNER can reach every gated route regardless of stored grants',
+        (tester) async {
       const owner = AuthUser(
         id: 'u_owner',
         email: 'owner@codephantom.dev',
@@ -212,18 +230,21 @@ void main() {
       for (final path in ['/scanner', '/signals', '/ea']) {
         router.go(path);
         await settle(tester);
-        expect(locationOf(router), path, reason: 'OWNER must not be redirected away from $path');
+        expect(locationOf(router), path,
+            reason: 'OWNER must not be redirected away from $path',);
       }
     });
   });
 
   group('/register — environment-based screen selection', () {
-    Future<GoRouter> pumpRegisterRouteAs(WidgetTester tester, AppEnvironment env) async {
+    Future<GoRouter> pumpRegisterRouteAs(
+        WidgetTester tester, AppEnvironment env,) async {
       late GoRouter router;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(_UnauthenticatedAuthService()),
+            authServiceProvider
+                .overrideWithValue(_UnauthenticatedAuthService()),
             appEnvironmentProvider.overrideWithValue(env),
           ],
           child: Consumer(
@@ -242,14 +263,16 @@ void main() {
       return router;
     }
 
-    testWidgets('MOCK mode shows the placeholder registration screen', (tester) async {
+    testWidgets('MOCK mode shows the placeholder registration screen',
+        (tester) async {
       await pumpRegisterRouteAs(tester, AppEnvironment.mock);
 
       expect(find.byType(RegisterPlaceholderScreen), findsOneWidget);
       expect(find.byType(CreateAccountScreen), findsNothing);
     });
 
-    testWidgets('DEVELOPMENT mode shows the real Create Account screen (selects the API service)',
+    testWidgets(
+        'DEVELOPMENT mode shows the real Create Account screen (selects the API service)',
         (tester) async {
       await pumpRegisterRouteAs(tester, AppEnvironment.development);
 
@@ -257,7 +280,8 @@ void main() {
       expect(find.byType(RegisterPlaceholderScreen), findsNothing);
     });
 
-    testWidgets('PRODUCTION mode also shows the real Create Account screen', (tester) async {
+    testWidgets('PRODUCTION mode also shows the real Create Account screen',
+        (tester) async {
       await pumpRegisterRouteAs(tester, AppEnvironment.production);
 
       expect(find.byType(CreateAccountScreen), findsOneWidget);

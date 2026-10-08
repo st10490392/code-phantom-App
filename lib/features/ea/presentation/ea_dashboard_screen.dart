@@ -20,7 +20,7 @@ class EADashboardScreen extends ConsumerWidget {
     final accountAsync = ref.watch(primaryEAAccountProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('CPT GILGAMESH EA')),
+      appBar: AppBar(title: const Text('CPT ENKIDU EA')),
       body: accountAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),
