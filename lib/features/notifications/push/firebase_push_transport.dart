@@ -10,10 +10,34 @@ class PhonePushConfig {
   static const appId = String.fromEnvironment('PUSH_FIREBASE_APP_ID');
   static const apiKey = String.fromEnvironment('PUSH_FIREBASE_API_KEY');
   static const senderId = String.fromEnvironment('PUSH_FIREBASE_SENDER_ID');
-  static bool get supported => !kIsWeb &&
+  static const vapidKey = String.fromEnvironment('PUSH_WEB_VAPID_KEY');
+  static bool get supported => kIsWeb ||
       (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
   static bool get configured => enabled && supported &&
-      [projectId, appId, apiKey, senderId].every((value) => value.isNotEmpty);
+      (!kIsWeb && defaultTargetPlatform == TargetPlatform.android ||
+       [projectId, appId, apiKey, senderId].every((value) => value.isNotEmpty) && (!kIsWeb || vapidKey.isNotEmpty));
+}
+
+/// Android reads generated native resources from google-services.json.
+/// This runs before handlers are registered, without prompting permission.
+Future<void> initializePushFirebase() async {
+  if (Firebase.apps.isNotEmpty) return;
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await Firebase.initializeApp();
+  } else {
+    await Firebase.initializeApp(options: const FirebaseOptions(
+      projectId: PhonePushConfig.projectId, appId: PhonePushConfig.appId,
+      apiKey: PhonePushConfig.apiKey, messagingSenderId: PhonePushConfig.senderId,
+      iosBundleId: 'dev.codephantom.codePhantomApp',
+    ));
+  }
+}
+
+@pragma('vm:entry-point')
+Future<void> firebasePushBackgroundHandler(RemoteMessage message) async {
+  await initializePushFirebase();
+  // Notification payloads are displayed by the OS. Never display another
+  // notification, fetch trading data, or trust payloads as authorization here.
 }
 
 class FirebasePushTransport implements PushTransport {
@@ -21,15 +45,10 @@ class FirebasePushTransport implements PushTransport {
   final FirebaseMessaging _messaging;
 
   static Future<PushTransport> create() async {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        projectId: PhonePushConfig.projectId,
-        appId: PhonePushConfig.appId,
-        apiKey: PhonePushConfig.apiKey,
-        messagingSenderId: PhonePushConfig.senderId,
-        iosBundleId: 'dev.codephantom.codePhantomApp',
-      ),
-    );
+    await initializePushFirebase();
+    if (kIsWeb && !await FirebaseMessaging.instance.isSupported()) {
+      throw UnsupportedError('Web notifications are not supported here.');
+    }
     final messaging = FirebaseMessaging.instance;
     // Foreground alerts use the app banner on both platforms, once.
     await messaging.setForegroundNotificationPresentationOptions();
@@ -47,8 +66,8 @@ class FirebasePushTransport implements PushTransport {
   Future<String?> token() async {
     await _messaging.setAutoInitEnabled(true);
     // APNs registration can finish after sign-in; resume retries safely.
-    if (defaultTargetPlatform == TargetPlatform.iOS && await _messaging.getAPNSToken() == null) return null;
-    return _messaging.getToken();
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS && await _messaging.getAPNSToken() == null) return null;
+    return _messaging.getToken(vapidKey: kIsWeb ? PhonePushConfig.vapidKey : null);
   }
 
   @override

@@ -43,7 +43,7 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(alert.title),
-              action: SnackBarAction(label: 'View', onPressed: () => ref.read(appRouterProvider).go('/notifications')),
+              action: SnackBarAction(label: 'View', onPressed: () => ref.read(appRouterProvider).go(alert.signalPath)),
             ),
           );
         },
@@ -51,10 +51,10 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
     );
     _subscriptions.add(
       _push.opened.listen(
-        (_) {
+        (alert) {
           if (!mounted) return;
           ref.invalidate(notificationListProvider);
-          ref.read(appRouterProvider).go('/notifications');
+          ref.read(appRouterProvider).go(alert.signalPath);
         },
       ),
     );
@@ -87,7 +87,7 @@ class PhonePushSettings extends ConsumerWidget {
       builder: (context, _) => Column(
         children: [
           SwitchListTile(
-            title: const Text('Phone alerts'),
+            title: const Text('Signal alerts'),
             subtitle: Text(push.error ?? 'New signals and take-profit or stop-loss results.'),
             value: push.enabled,
             onChanged: push.busy ? null : (value) => unawaited(value ? push.enable() : push.disable()),

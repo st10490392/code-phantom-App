@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/secure_storage.dart';
@@ -62,9 +63,20 @@ class PhonePushController extends ChangeNotifier {
       ),
     );
     void emit(PhoneAlert alert, Set<String> seen, StreamController<PhoneAlert> stream, {bool tap = false}) {
-      if (_disposed || (!tap && (_user == null || !enabled)) || !seen.add(alert.eventId)) return;
-      if (seen.length > 100) seen.remove(seen.first);
-      stream.add(alert);
+      final generation = _generation;
+      unawaited(_run(() async {
+        if (_disposed || generation != _generation || (!tap && (_user == null || !enabled)) || !seen.add(alert.eventId)) return;
+        if (seen.length > 100) seen.remove(seen.first);
+        // Account-scoped bounded history survives restarts. Foreground and tap
+        // receipts stay separate so viewing an alert is never suppressed.
+        final key = 'push_seen_${_user ?? 'signed_out'}_${tap ? 'opened' : 'foreground'}';
+        final raw = await storage.read(key);
+        final ids = raw == null ? <String>[] : (jsonDecode(raw) as List).cast<String>();
+        if (ids.contains(alert.eventId)) return;
+        ids.add(alert.eventId);
+        await storage.write(key, jsonEncode(ids.length > 100 ? ids.sublist(ids.length - 100) : ids));
+        if (!_disposed && generation == _generation) stream.add(alert);
+      }));
     }
     _subscriptions.add(transport.foreground.listen((alert) => emit(alert, _seenForeground, _foreground)));
     _subscriptions.add(transport.opened.listen((alert) => emit(alert, _seenOpened, _opened, tap: true)));
@@ -113,6 +125,8 @@ class PhonePushController extends ChangeNotifier {
 
   Future<void> setUser(String? userId) {
     if (_user == userId) return Future.value();
+    _seenForeground.clear();
+    _seenOpened.clear();
     _user = userId;
     final generation = ++_generation;
     return _run(() async {
@@ -138,7 +152,7 @@ class PhonePushController extends ChangeNotifier {
     final transport = await _initialize();
     enabled = await transport.permission(prompt: true);
     await storage.write('push_enabled', enabled.toString());
-    if (!enabled) { error = 'Allow notifications in your phone settings to receive alerts.'; return; }
+    if (!enabled) { await _unregister(); error = 'Allow notifications in your phone settings to receive alerts.'; return; }
     await _register(generation);
   });
 

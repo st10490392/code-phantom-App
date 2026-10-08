@@ -9,7 +9,7 @@ final phonePushControllerProvider = Provider<PhonePushController>((ref) {
   final controller = PhonePushController(
     api: ref.watch(apiClientProvider),
     storage: ref.watch(secureStorageProvider),
-    platform: defaultTargetPlatform == TargetPlatform.iOS ? 'IOS' : 'ANDROID',
+    platform: kIsWeb ? 'WEB' : defaultTargetPlatform == TargetPlatform.iOS ? 'IOS' : 'ANDROID',
     createTransport: ref.watch(appEnvironmentProvider) != AppEnvironment.mock && PhonePushConfig.configured
         ? FirebasePushTransport.create : null,
   );

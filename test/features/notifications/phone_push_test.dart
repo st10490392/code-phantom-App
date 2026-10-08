@@ -54,6 +54,12 @@ const data = {
 };
 
 void main() {
+  test('push routing only uses validated signal UUID, never payload routes', () {
+    final alert = PhoneAlert.parse({...data, 'url': 'https://evil.example', 'strategy': 'private'})!;
+    expect(alert.signalPath, '/signals/${data['signal_id']}');
+    expect(PhoneAlert.parse({...data, 'signal_id': '../ea'}), isNull);
+    expect(PhoneAlert.parse({...data, 'type': 'private'}), isNull);
+  });
   late FakeSecureStorage storage;
   late FakePushTransport transport;
   late PhonePushController controller;
@@ -112,6 +118,21 @@ void main() {
     expect(controller.enabled, false);
     expect(requests, isEmpty);
     expect(controller.error, contains('phone settings'));
+  });
+
+  test('persisted foreground receipt suppresses restart duplicates but not taps', () async {
+    await storage.write('push_seen_user_foreground', '["${data['event_id']}"]');
+    final foreground = <PhoneAlert>[], opened = <PhoneAlert>[];
+    final a = controller.foreground.listen(foreground.add), b = controller.opened.listen(opened.add);
+    await controller.setUser('user');
+    await controller.enable();
+    transport.messages.add(PhoneAlert.parse(data)!);
+    transport.taps.add(PhoneAlert.parse(data)!);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await controller.resume();
+    expect(foreground, isEmpty);
+    expect(opened.length, 1);
+    await a.cancel(); await b.cancel();
   });
 
   test(
