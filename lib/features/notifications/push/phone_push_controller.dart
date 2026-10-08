@@ -76,7 +76,7 @@ class PhonePushController extends ChangeNotifier {
         ids.add(alert.eventId);
         await storage.write(key, jsonEncode(ids.length > 100 ? ids.sublist(ids.length - 100) : ids));
         if (!_disposed && generation == _generation) stream.add(alert);
-      }));
+      },),);
     }
     _subscriptions.add(transport.foreground.listen((alert) => emit(alert, _seenForeground, _foreground)));
     _subscriptions.add(transport.opened.listen((alert) => emit(alert, _seenOpened, _opened, tap: true)));

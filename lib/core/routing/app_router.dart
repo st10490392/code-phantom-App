@@ -120,7 +120,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen(), routes: [
             GoRoute(path: ':id', builder: (context, state) => SignalDetailScreen(signalId: state.pathParameters['id']!)),
-          ]),
+          ],),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(
             path: '/notifications',

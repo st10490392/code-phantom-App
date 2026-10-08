@@ -26,9 +26,9 @@ class SignalDetailScreen extends ConsumerWidget {
       error: (_, __) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Text('Signal unavailable or access has ended.'),
         TextButton(onPressed: () => ref.invalidate(entitledSignalProvider(signalId)), child: const Text('Retry')),
-      ])),
+      ],),),
       data: (signal) => RefreshIndicator(
-        onRefresh: () async { await ref.refresh(entitledSignalProvider(signalId).future); },
+        onRefresh: () => ref.refresh(entitledSignalProvider(signalId).future).then((_) {}),
         child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [SignalCard(signal: signal)]),
       ),
     ),

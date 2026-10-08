@@ -29,7 +29,7 @@ Future<void> initializePushFirebase() async {
       projectId: PhonePushConfig.projectId, appId: PhonePushConfig.appId,
       apiKey: PhonePushConfig.apiKey, messagingSenderId: PhonePushConfig.senderId,
       iosBundleId: 'dev.codephantom.codePhantomApp',
-    ));
+    ),);
   }
 }
 
