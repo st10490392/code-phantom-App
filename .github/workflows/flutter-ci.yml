@@ -44,6 +44,19 @@ jobs:
             test/features/auth/backend_permission_mapping_test.dart \
             test/features/enkidu_shadow/enkidu_shadow_screen_test.dart
           git diff --exit-code -- lib test
+      - name: Check Dart analyzer fixes
+        run: |
+          dart fix --apply
+          dart format --output=write \
+            lib/core/routing/app_router.dart \
+            lib/core/routing/app_shell.dart \
+            lib/core/routing/nav_destination.dart \
+            lib/features/enkidu_shadow/enkidu_shadow_screen.dart \
+            test/core/routing/app_router_test.dart \
+            test/core/routing/nav_destination_test.dart \
+            test/features/auth/backend_permission_mapping_test.dart \
+            test/features/enkidu_shadow/enkidu_shadow_screen_test.dart
+          git diff --exit-code
       - run: flutter analyze
       - run: flutter test
       - run: python3 -m unittest discover -s scripts -p test_firebase_config.py
