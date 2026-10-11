@@ -69,10 +69,12 @@ jobs:
 
       # Issue #15: reproducible staging artifacts, without deployment or signing secrets.
       - name: Build verified staging DEMO artifacts
+        if: github.event_name == 'push'
         env:
           API_BASE_URL: https://code-phantom-backend-staging.up.railway.app/api/v1
         run: scripts/build_demo_staging.sh
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
         with:
           name: gilgamesh-demo-staging
           path: |
