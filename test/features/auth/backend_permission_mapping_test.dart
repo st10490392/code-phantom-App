@@ -29,15 +29,19 @@ void main() {
         () {
       final set = permissionSetFromBackendCodes(_ownerPermissionCodes);
       for (final p in Permission.values) {
-        expect(set.has(p), isTrue,
-            reason: '$p should be granted from the OWNER permission list');
+        expect(
+          set.has(p),
+          isTrue,
+          reason: '$p should be granted from the OWNER permission list',
+        );
       }
       expect(set.granted, PermissionSet.owner.granted);
     });
 
     test('a restricted client only gets what its codes map to', () {
       final set = permissionSetFromBackendCodes(
-          const ['scanner.view', 'notifications.view']);
+        const ['scanner.view', 'notifications.view'],
+      );
       expect(set.has(Permission.scannerAccess), isTrue);
       expect(set.has(Permission.scannerReview), isFalse);
       expect(set.has(Permission.signalsAccess), isFalse);
@@ -46,7 +50,8 @@ void main() {
 
     test('an unrecognized backend code is dropped, not thrown', () {
       final set = permissionSetFromBackendCodes(
-          const ['scanner.view', 'some.future.permission']);
+        const ['scanner.view', 'some.future.permission'],
+      );
       expect(set.has(Permission.scannerAccess), isTrue);
       expect(set.granted.length, 1);
     });
@@ -54,21 +59,25 @@ void main() {
     test('view and manage variants both grant the single app-level admin gate',
         () {
       expect(
-          permissionSetFromBackendCodes(const ['clients.view'])
-              .has(Permission.clientAdmin),
-          isTrue);
+        permissionSetFromBackendCodes(const ['clients.view'])
+            .has(Permission.clientAdmin),
+        isTrue,
+      );
       expect(
-          permissionSetFromBackendCodes(const ['clients.manage'])
-              .has(Permission.clientAdmin),
-          isTrue);
+        permissionSetFromBackendCodes(const ['clients.manage'])
+            .has(Permission.clientAdmin),
+        isTrue,
+      );
       expect(
-          permissionSetFromBackendCodes(const ['licences.view'])
-              .has(Permission.licenceAdmin),
-          isTrue);
+        permissionSetFromBackendCodes(const ['licences.view'])
+            .has(Permission.licenceAdmin),
+        isTrue,
+      );
       expect(
-          permissionSetFromBackendCodes(const ['licences.manage'])
-              .has(Permission.licenceAdmin),
-          isTrue);
+        permissionSetFromBackendCodes(const ['licences.manage'])
+            .has(Permission.licenceAdmin),
+        isTrue,
+      );
     });
   });
 
@@ -94,7 +103,7 @@ void main() {
         permissionCodes: const [],
         entitlementCodes: const [
           'future.product.access',
-          'scanner.forex.notifications'
+          'scanner.forex.notifications',
         ],
       );
       expect(set.granted, isEmpty);
@@ -103,15 +112,21 @@ void main() {
 
   group('primaryRoleFromBackendCodes', () {
     test('a single role maps directly', () {
-      expect(primaryRoleFromBackendCodes(const ['SCANNER_CLIENT']),
-          AppRole.scannerClient);
+      expect(
+        primaryRoleFromBackendCodes(const ['SCANNER_CLIENT']),
+        AppRole.scannerClient,
+      );
     });
 
     test('multiple roles resolve to the highest-privilege one', () {
-      expect(primaryRoleFromBackendCodes(const ['TRADER', 'OWNER']),
-          AppRole.owner);
-      expect(primaryRoleFromBackendCodes(const ['SCANNER_CLIENT', 'ADMIN']),
-          AppRole.admin);
+      expect(
+        primaryRoleFromBackendCodes(const ['TRADER', 'OWNER']),
+        AppRole.owner,
+      );
+      expect(
+        primaryRoleFromBackendCodes(const ['SCANNER_CLIENT', 'ADMIN']),
+        AppRole.admin,
+      );
     });
 
     test('an empty or unrecognized role list falls back to INTERNAL', () {
@@ -155,7 +170,7 @@ void main() {
           'id': 'u2',
           'email': 'x@y.com',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['INTERNAL'],
         'permissions': const <String>[],
@@ -171,7 +186,7 @@ void main() {
           'id': 'u5',
           'email': 'buyer@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['CLIENT'],
         'permissions': const <String>[],
@@ -191,7 +206,7 @@ void main() {
           'id': 'u4',
           'email': 'new.client@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['CLIENT'],
         'permissions': const <String>[],
@@ -211,7 +226,7 @@ void main() {
           'id': 'u1',
           'email': 'owner@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': true
+          'protected': true,
         },
         'roles': const ['OWNER'],
         'permissions': _ownerPermissionCodes,
@@ -220,16 +235,18 @@ void main() {
       final visible =
           visibleNavDestinationsFor(owner).map((d) => d.path).toSet();
       expect(
-          visible,
-          primaryNavDestinations
-              .where((d) => !d.ownerOnly)
-              .map((d) => d.path)
-              .toSet());
+        visible,
+        primaryNavDestinations
+            .where((d) => !d.ownerOnly)
+            .map((d) => d.path)
+            .toSet(),
+      );
       expect(
-          visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
-              .map((d) => d.path)
-              .toSet(),
-          primaryNavDestinations.map((d) => d.path).toSet());
+        visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
+            .map((d) => d.path)
+            .toSet(),
+        primaryNavDestinations.map((d) => d.path).toSet(),
+      );
     });
 
     test(
@@ -240,7 +257,7 @@ void main() {
           'id': 'u3',
           'email': 'scanner.client@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['SCANNER_CLIENT'],
         'permissions': const ['scanner.view', 'notifications.view'],
@@ -249,7 +266,9 @@ void main() {
       final visible =
           visibleNavDestinationsFor(client).map((d) => d.path).toSet();
       expect(
-          visible, {'/dashboard', '/scanner', '/notifications', '/settings'});
+        visible,
+        {'/dashboard', '/scanner', '/notifications', '/settings'},
+      );
       expect(visible.contains('/clients'), isFalse);
       expect(visible.contains('/licences'), isFalse);
       expect(visible.contains('/ea'), isFalse);
@@ -262,7 +281,7 @@ void main() {
           'id': 'u5',
           'email': 'buyer@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['CLIENT'],
         'permissions': const <String>[],
@@ -276,7 +295,7 @@ void main() {
         '/scanner',
         '/signals',
         '/notifications',
-        '/settings'
+        '/settings',
       });
       expect(visible.contains('/clients'), isFalse);
       expect(visible.contains('/licences'), isFalse);
@@ -291,7 +310,7 @@ void main() {
           'id': 'u4',
           'email': 'new.client@codephantom.dev',
           'status': 'ACTIVE',
-          'protected': false
+          'protected': false,
         },
         'roles': const ['CLIENT'],
         'permissions': const <String>[],

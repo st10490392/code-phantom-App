@@ -43,7 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/login',
         '/forgot-password',
         '/register',
-        '/verify-email'
+        '/verify-email',
       ].contains(state.matchedLocation);
       final atSplash = state.matchedLocation == '/splash';
       final atRoot = state.matchedLocation == '/';
@@ -89,15 +89,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: ApiConfig.webAuthCallbackPath,
         builder: (context, state) => Consumer(
           builder: (context, ref, _) => FormPage(
-              child: AuthCallbackScreen(
-                  uri: ref.read(pendingWebAuthCallbackProvider) ?? state.uri)),
+            child: AuthCallbackScreen(
+              uri: ref.read(pendingWebAuthCallbackProvider) ?? state.uri,
+            ),
+          ),
         ),
       ),
       GoRoute(
-          path: '/splash', builder: (context, state) => const SplashScreen()),
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
-          path: '/login',
-          builder: (context, state) => const FormPage(child: LoginScreen())),
+        path: '/login',
+        builder: (context, state) => const FormPage(child: LoginScreen()),
+      ),
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) =>
@@ -112,9 +117,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             final isMock =
                 ref.watch(appEnvironmentProvider) == AppEnvironment.mock;
             return FormPage(
-                child: isMock
-                    ? const RegisterPlaceholderScreen()
-                    : const CreateAccountScreen());
+              child: isMock
+                  ? const RegisterPlaceholderScreen()
+                  : const CreateAccountScreen(),
+            );
           },
         ),
       ),
@@ -125,14 +131,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // In-app navigation still passes the email through extra; actual
         // verification links return through AuthCallbackScreen.
         builder: (context, state) => FormPage(
-            child: VerifyEmailScreen(email: state.extra as String? ?? '')),
+          child: VerifyEmailScreen(email: state.extra as String? ?? ''),
+        ),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(
-              path: '/dashboard',
-              builder: (context, state) => const DashboardScreen()),
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
           GoRoute(
             path: '/scanner',
             builder: (context, state) => const ScannerScreen(),
@@ -149,17 +157,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SignalsScreen(),
             routes: [
               GoRoute(
-                  path: ':id',
-                  builder: (context, state) => SignalDetailScreen(
-                      signalId: state.pathParameters['id']!)),
+                path: ':id',
+                builder: (context, state) => SignalDetailScreen(
+                  signalId: state.pathParameters['id']!,
+                ),
+              ),
             ],
           ),
           GoRoute(
-              path: '/enkidu-shadow',
-              builder: (context, state) => const EnkiduShadowScreen()),
+            path: '/enkidu-shadow',
+            builder: (context, state) => const EnkiduShadowScreen(),
+          ),
           GoRoute(
-              path: '/ea',
-              builder: (context, state) => const EADashboardScreen()),
+            path: '/ea',
+            builder: (context, state) => const EADashboardScreen(),
+          ),
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationCentreScreen(),
@@ -169,11 +181,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
             routes: [
               GoRoute(
-                  path: 'about',
-                  builder: (context, state) => const AboutScreen()),
+                path: 'about',
+                builder: (context, state) => const AboutScreen(),
+              ),
               GoRoute(
-                  path: 'profile',
-                  builder: (context, state) => const ProfileScreen()),
+                path: 'profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
             ],
           ),
         ],
@@ -192,8 +206,9 @@ String _withReturn(String path, String? returnTo) => returnTo == null
 /// the parameter cannot redirect anywhere unexpected.
 String? safeReturnPath(String? raw) {
   if (raw == null || raw.isEmpty) return null;
-  if (!raw.startsWith('/') || raw.startsWith('//') || raw.contains('\\'))
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.contains('\\')) {
     return null;
+  }
   final uri = Uri.tryParse(raw);
   if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
   const excluded = [
@@ -203,7 +218,7 @@ String? safeReturnPath(String? raw) {
     '/register',
     '/forgot-password',
     '/verify-email',
-    ApiConfig.webAuthCallbackPath
+    ApiConfig.webAuthCallbackPath,
   ];
   if (excluded.contains(uri.path)) return null;
   return raw;

@@ -21,8 +21,10 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final visible = visibleNavDestinationsFor(user,
-        enkiduShadowEnabled: ref.watch(enkiduShadowViewEnabledProvider));
+    final visible = visibleNavDestinationsFor(
+      user,
+      enkiduShadowEnabled: ref.watch(enkiduShadowViewEnabledProvider),
+    );
 
     final location = GoRouterState.of(context).matchedLocation;
     final selectedIndex =
@@ -82,8 +84,8 @@ class AppShell extends ConsumerWidget {
             child: SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                    minHeight:
-                        MediaQuery.sizeOf(context).height - kToolbarHeight),
+                  minHeight: MediaQuery.sizeOf(context).height - kToolbarHeight,
+                ),
                 child: IntrinsicHeight(
                   child: NavigationRail(
                     selectedIndex: currentIndex,

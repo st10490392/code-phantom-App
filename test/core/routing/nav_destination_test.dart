@@ -35,13 +35,15 @@ void main() {
       final owner = _userWith(AppRole.owner, PermissionSet.none);
       final customer = _userWith(AppRole.client, PermissionSet.none);
       expect(
-          visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
-              .map((d) => d.path),
-          contains('/enkidu-shadow'));
+        visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
+            .map((d) => d.path),
+        contains('/enkidu-shadow'),
+      );
       expect(
-          visibleNavDestinationsFor(customer, enkiduShadowEnabled: true)
-              .map((d) => d.path),
-          isNot(contains('/enkidu-shadow')));
+        visibleNavDestinationsFor(customer, enkiduShadowEnabled: true)
+            .map((d) => d.path),
+        isNot(contains('/enkidu-shadow')),
+      );
     });
 
     test('SCANNER_CLIENT sees Dashboard, Scanner, Alerts, Settings only', () {

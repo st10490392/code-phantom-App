@@ -140,8 +140,10 @@ void main() {
       expect(permissionForPath('/scanner'), Permission.scannerAccess);
       expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
       expect(permissionForPath('/signals'), Permission.signalsAccess);
-      expect(permissionForPath('/signals/87654321-4321-4321-4321-210987654321'),
-          Permission.signalsAccess);
+      expect(
+        permissionForPath('/signals/87654321-4321-4321-4321-210987654321'),
+        Permission.signalsAccess,
+      );
       expect(permissionForPath('/ea'), Permission.systemAdmin);
     });
 
@@ -154,8 +156,11 @@ void main() {
   });
 
   group('appRouterProvider redirect — navigation authorization', () {
-    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user,
-        {bool v5Enabled = false}) async {
+    Future<GoRouter> pumpRouterAs(
+      WidgetTester tester,
+      AuthUser user, {
+      bool v5Enabled = false,
+    }) async {
       late GoRouter router;
       await tester.pumpWidget(
         ProviderScope(
@@ -228,7 +233,7 @@ void main() {
           '/signals',
           '/signals/87654321-4321-4321-4321-210987654321',
           '/ea',
-          '/enkidu-shadow'
+          '/enkidu-shadow',
         ]) {
           router.go(path);
           await settle(tester);
@@ -267,11 +272,12 @@ void main() {
     testWidgets('customer deep link to V5 is denied even when view flag is on',
         (tester) async {
       const client = AuthUser(
-          id: 'u_client',
-          email: 'client@example.com',
-          displayName: 'Client',
-          role: AppRole.client,
-          permissions: PermissionSet.none);
+        id: 'u_client',
+        email: 'client@example.com',
+        displayName: 'Client',
+        role: AppRole.client,
+        permissions: PermissionSet.none,
+      );
       final router = await pumpRouterAs(tester, client, v5Enabled: true);
       router.go('/enkidu-shadow');
       await settle(tester);
@@ -281,11 +287,12 @@ void main() {
     testWidgets('OWNER can open the V5 view only when locally enabled',
         (tester) async {
       const owner = AuthUser(
-          id: 'u_owner',
-          email: 'owner@example.com',
-          displayName: 'Owner',
-          role: AppRole.owner,
-          permissions: PermissionSet.none);
+        id: 'u_owner',
+        email: 'owner@example.com',
+        displayName: 'Owner',
+        role: AppRole.owner,
+        permissions: PermissionSet.none,
+      );
       final router = await pumpRouterAs(tester, owner, v5Enabled: true);
       router.go('/enkidu-shadow');
       await settle(tester);
