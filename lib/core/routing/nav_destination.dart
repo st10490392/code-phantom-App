@@ -80,7 +80,8 @@ const List<NavDestination> primaryNavDestinations = [
 /// [AppShell] (bottom nav) and anything else that needs to know which
 /// modules a user can reach should call this rather than re-deriving the
 /// same filter.
-List<NavDestination> visibleNavDestinationsFor(AuthUser? user, {bool enkiduShadowEnabled = false}) {
+List<NavDestination> visibleNavDestinationsFor(AuthUser? user,
+    {bool enkiduShadowEnabled = false}) {
   return primaryNavDestinations.where((d) {
     if (d.ownerOnly) return enkiduShadowEnabled && user?.isOwner == true;
     if (d.permission == null) return true;

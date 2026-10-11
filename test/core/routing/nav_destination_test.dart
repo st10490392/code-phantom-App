@@ -18,8 +18,10 @@ void main() {
   group('visibleNavDestinationsFor — module visibility', () {
     test('signed out sees only the always-visible destinations', () {
       final visible = visibleNavDestinationsFor(null);
-      expect(visible.map((d) => d.path),
-          ['/dashboard', '/notifications', '/settings'],);
+      expect(
+        visible.map((d) => d.path),
+        ['/dashboard', '/notifications', '/settings'],
+      );
     });
 
     test('OWNER sees shipped destinations, with V5 off by default', () {
@@ -32,15 +34,21 @@ void main() {
     test('V5 destination is OWNER only when the local flag is enabled', () {
       final owner = _userWith(AppRole.owner, PermissionSet.none);
       final customer = _userWith(AppRole.client, PermissionSet.none);
-      expect(visibleNavDestinationsFor(owner, enkiduShadowEnabled:true)
-          .map((d) => d.path), contains('/enkidu-shadow'));
-      expect(visibleNavDestinationsFor(customer, enkiduShadowEnabled:true)
-          .map((d) => d.path), isNot(contains('/enkidu-shadow')));
+      expect(
+          visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
+              .map((d) => d.path),
+          contains('/enkidu-shadow'));
+      expect(
+          visibleNavDestinationsFor(customer, enkiduShadowEnabled: true)
+              .map((d) => d.path),
+          isNot(contains('/enkidu-shadow')));
     });
 
     test('SCANNER_CLIENT sees Dashboard, Scanner, Alerts, Settings only', () {
       final client = _userWith(
-          AppRole.scannerClient, defaultPermissionsFor(AppRole.scannerClient),);
+        AppRole.scannerClient,
+        defaultPermissionsFor(AppRole.scannerClient),
+      );
       final paths =
           visibleNavDestinationsFor(client).map((d) => d.path).toSet();
       expect(paths, {'/dashboard', '/scanner', '/notifications', '/settings'});

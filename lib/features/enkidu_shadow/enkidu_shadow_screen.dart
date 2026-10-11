@@ -37,7 +37,8 @@ class EnkiduShadowScreen extends ConsumerWidget {
             children: [
               const Text('Owner SHADOW observations unavailable.'),
               TextButton(
-                onPressed: () => ref.invalidate(enkiduShadowObservationsProvider),
+                onPressed: () =>
+                    ref.invalidate(enkiduShadowObservationsProvider),
                 child: const Text('Retry'),
               ),
             ],

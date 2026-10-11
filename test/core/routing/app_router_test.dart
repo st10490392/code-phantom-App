@@ -32,8 +32,10 @@ class _FixedAuthService implements AuthService {
       );
 
   @override
-  Future<AuthSession> login(
-          {required String email, required String password,}) =>
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -44,8 +46,10 @@ class _FixedAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
-  Future<void> confirmPasswordReset(
-          {required String accessToken, required String newPassword,}) =>
+  Future<void> confirmPasswordReset({
+    required String accessToken,
+    required String newPassword,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -69,8 +73,10 @@ class _UnauthenticatedAuthService implements AuthService {
   Future<AuthSession?> restoreSession() async => null;
 
   @override
-  Future<AuthSession> login(
-          {required String email, required String password,}) =>
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -81,8 +87,10 @@ class _UnauthenticatedAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
-  Future<void> confirmPasswordReset(
-          {required String accessToken, required String newPassword,}) =>
+  Future<void> confirmPasswordReset({
+    required String accessToken,
+    required String newPassword,
+  }) =>
       throw UnimplementedError();
 
   @override
@@ -104,19 +112,23 @@ void main() {
     test('recognizes the registered custom scheme and host', () {
       expect(
         isCodePhantomAuthCallback(
-            Uri.parse('codephantom://auth-callback#type=recovery'),),
+          Uri.parse('codephantom://auth-callback#type=recovery'),
+        ),
         isTrue,
       );
       expect(
-          isCodePhantomAuthCallback(
-              Uri.parse('https://example.com/auth-callback'),),
-          isFalse,);
+        isCodePhantomAuthCallback(
+          Uri.parse('https://example.com/auth-callback'),
+        ),
+        isFalse,
+      );
     });
 
     test('parses Supabase callback values from the fragment', () {
       final params = authCallbackParameters(
         Uri.parse(
-            'codephantom://auth-callback#access_token=abc123&type=recovery',),
+          'codephantom://auth-callback#access_token=abc123&type=recovery',
+        ),
       );
       expect(params['access_token'], 'abc123');
       expect(params['type'], 'recovery');
@@ -128,7 +140,8 @@ void main() {
       expect(permissionForPath('/scanner'), Permission.scannerAccess);
       expect(permissionForPath('/scanner/setup/abc'), Permission.scannerAccess);
       expect(permissionForPath('/signals'), Permission.signalsAccess);
-      expect(permissionForPath('/signals/87654321-4321-4321-4321-210987654321'), Permission.signalsAccess);
+      expect(permissionForPath('/signals/87654321-4321-4321-4321-210987654321'),
+          Permission.signalsAccess);
       expect(permissionForPath('/ea'), Permission.systemAdmin);
     });
 
@@ -141,7 +154,8 @@ void main() {
   });
 
   group('appRouterProvider redirect — navigation authorization', () {
-    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user, {bool v5Enabled = false}) async {
+    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user,
+        {bool v5Enabled = false}) async {
       late GoRouter router;
       await tester.pumpWidget(
         ProviderScope(
@@ -209,7 +223,13 @@ void main() {
         final router = await pumpRouterAs(tester, client);
         expect(locationOf(router), '/dashboard');
 
-        for (final path in ['/scanner', '/signals', '/signals/87654321-4321-4321-4321-210987654321', '/ea', '/enkidu-shadow']) {
+        for (final path in [
+          '/scanner',
+          '/signals',
+          '/signals/87654321-4321-4321-4321-210987654321',
+          '/ea',
+          '/enkidu-shadow'
+        ]) {
           router.go(path);
           await settle(tester);
           expect(
@@ -236,24 +256,37 @@ void main() {
       for (final path in ['/scanner', '/signals', '/ea']) {
         router.go(path);
         await settle(tester);
-        expect(locationOf(router), path,
-            reason: 'OWNER must not be redirected away from $path',);
+        expect(
+          locationOf(router),
+          path,
+          reason: 'OWNER must not be redirected away from $path',
+        );
       }
     });
 
-    testWidgets('customer deep link to V5 is denied even when view flag is on', (tester) async {
-      const client = AuthUser(id:'u_client',email:'client@example.com',displayName:'Client',
-          role:AppRole.client,permissions:PermissionSet.none);
-      final router = await pumpRouterAs(tester, client, v5Enabled:true);
+    testWidgets('customer deep link to V5 is denied even when view flag is on',
+        (tester) async {
+      const client = AuthUser(
+          id: 'u_client',
+          email: 'client@example.com',
+          displayName: 'Client',
+          role: AppRole.client,
+          permissions: PermissionSet.none);
+      final router = await pumpRouterAs(tester, client, v5Enabled: true);
       router.go('/enkidu-shadow');
       await settle(tester);
       expect(locationOf(router), '/dashboard');
     });
 
-    testWidgets('OWNER can open the V5 view only when locally enabled', (tester) async {
-      const owner = AuthUser(id:'u_owner',email:'owner@example.com',displayName:'Owner',
-          role:AppRole.owner,permissions:PermissionSet.none);
-      final router = await pumpRouterAs(tester, owner, v5Enabled:true);
+    testWidgets('OWNER can open the V5 view only when locally enabled',
+        (tester) async {
+      const owner = AuthUser(
+          id: 'u_owner',
+          email: 'owner@example.com',
+          displayName: 'Owner',
+          role: AppRole.owner,
+          permissions: PermissionSet.none);
+      final router = await pumpRouterAs(tester, owner, v5Enabled: true);
       router.go('/enkidu-shadow');
       await settle(tester);
       expect(locationOf(router), '/enkidu-shadow');
@@ -263,7 +296,9 @@ void main() {
 
   group('/register — environment-based screen selection', () {
     Future<GoRouter> pumpRegisterRouteAs(
-        WidgetTester tester, AppEnvironment env,) async {
+      WidgetTester tester,
+      AppEnvironment env,
+    ) async {
       late GoRouter router;
       await tester.pumpWidget(
         ProviderScope(
