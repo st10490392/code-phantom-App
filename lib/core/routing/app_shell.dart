@@ -6,6 +6,7 @@ import '../layout/breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../widgets/brand_mark.dart';
 import 'nav_destination.dart';
+import '../../features/enkidu_shadow/enkidu_shadow_screen.dart';
 
 /// Persistent shell: bottom nav on phones (and narrow browser windows), a
 /// navigation rail on tablets, an extended rail with width-capped content
@@ -20,7 +21,8 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final visible = visibleNavDestinationsFor(user);
+    final visible = visibleNavDestinationsFor(user,
+        enkiduShadowEnabled: ref.watch(enkiduShadowViewEnabledProvider));
 
     final location = GoRouterState.of(context).matchedLocation;
     final selectedIndex = visible.indexWhere((d) => location.startsWith(d.path));

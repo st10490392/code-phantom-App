@@ -23,6 +23,7 @@ import '../../features/settings/presentation/profile_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/signals/presentation/signals_screen.dart';
 import '../../features/signals/presentation/signal_detail_screen.dart';
+import '../../features/enkidu_shadow/enkidu_shadow_screen.dart';
 import '../permissions/permission.dart';
 import 'app_shell.dart';
 
@@ -60,6 +61,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (loggingIn || atSplash || atRoot) return returnTo ?? '/dashboard';
 
       final user = authState.user;
+      if (state.matchedLocation.startsWith('/enkidu-shadow') &&
+          (!ref.read(enkiduShadowViewEnabledProvider) || user?.isOwner != true)) {
+        return '/dashboard';
+      }
       final gate = permissionForPath(state.matchedLocation);
       if (gate != null && user != null && !user.isOwner && !user.permissions.has(gate)) {
         return '/dashboard';
@@ -121,6 +126,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen(), routes: [
             GoRoute(path: ':id', builder: (context, state) => SignalDetailScreen(signalId: state.pathParameters['id']!)),
           ],),
+          GoRoute(path: '/enkidu-shadow', builder: (context, state) => const EnkiduShadowScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(
             path: '/notifications',

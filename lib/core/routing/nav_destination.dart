@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/domain/auth_user.dart';
 import '../permissions/permission.dart';
+import '../../features/enkidu_shadow/enkidu_shadow_screen.dart';
 
 /// Describes the production-ready primary navigation areas. `permission ==
 /// null` means always visible (Dashboard, Notifications, Settings).
@@ -11,6 +12,7 @@ class NavDestination {
     required this.icon,
     required this.selectedIcon,
     this.permission,
+    this.ownerOnly = false,
   });
 
   final String path;
@@ -18,6 +20,7 @@ class NavDestination {
   final IconData icon;
   final IconData selectedIcon;
   final Permission? permission;
+  final bool ownerOnly;
 }
 
 const List<NavDestination> primaryNavDestinations = [
@@ -40,6 +43,13 @@ const List<NavDestination> primaryNavDestinations = [
     icon: Icons.show_chart_outlined,
     selectedIcon: Icons.show_chart,
     permission: Permission.signalsAccess,
+  ),
+  NavDestination(
+    path: '/enkidu-shadow',
+    label: 'V5 Shadow',
+    icon: Icons.visibility_outlined,
+    selectedIcon: Icons.visibility,
+    ownerOnly: true,
   ),
   NavDestination(
     path: '/ea',
@@ -70,8 +80,9 @@ const List<NavDestination> primaryNavDestinations = [
 /// [AppShell] (bottom nav) and anything else that needs to know which
 /// modules a user can reach should call this rather than re-deriving the
 /// same filter.
-List<NavDestination> visibleNavDestinationsFor(AuthUser? user) {
+List<NavDestination> visibleNavDestinationsFor(AuthUser? user, {bool enkiduShadowEnabled = false}) {
   return primaryNavDestinations.where((d) {
+    if (d.ownerOnly) return enkiduShadowEnabled && user?.isOwner == true;
     if (d.permission == null) return true;
     if (user == null) return false;
     if (user.isOwner) return true;

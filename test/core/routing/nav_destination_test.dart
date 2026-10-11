@@ -22,12 +22,20 @@ void main() {
           ['/dashboard', '/notifications', '/settings'],);
     });
 
-    test('OWNER sees every destination regardless of stored grants', () {
+    test('OWNER sees shipped destinations, with V5 off by default', () {
       final owner = _userWith(AppRole.owner, PermissionSet.none);
       final visible = visibleNavDestinationsFor(owner);
-      expect(visible.length, primaryNavDestinations.length);
-      expect(visible.map((d) => d.path),
-          primaryNavDestinations.map((d) => d.path),);
+      expect(visible.map((d) => d.path), isNot(contains('/enkidu-shadow')));
+      expect(visible.length, primaryNavDestinations.length - 1);
+    });
+
+    test('V5 destination is OWNER only when the local flag is enabled', () {
+      final owner = _userWith(AppRole.owner, PermissionSet.none);
+      final customer = _userWith(AppRole.client, PermissionSet.none);
+      expect(visibleNavDestinationsFor(owner, enkiduShadowEnabled:true)
+          .map((d) => d.path), contains('/enkidu-shadow'));
+      expect(visibleNavDestinationsFor(customer, enkiduShadowEnabled:true)
+          .map((d) => d.path), isNot(contains('/enkidu-shadow')));
     });
 
     test('SCANNER_CLIENT sees Dashboard, Scanner, Alerts, Settings only', () {

@@ -12,6 +12,7 @@ import 'package:code_phantom_app/features/auth/domain/auth_session.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_user.dart';
 import 'package:code_phantom_app/features/auth/presentation/auth_providers.dart';
 import 'package:code_phantom_app/features/auth/presentation/auth_callback_screen.dart';
+import 'package:code_phantom_app/features/enkidu_shadow/enkidu_shadow_screen.dart';
 import 'package:code_phantom_app/features/auth/presentation/create_account_screen.dart';
 import 'package:code_phantom_app/features/auth/presentation/register_placeholder_screen.dart';
 
@@ -140,12 +141,16 @@ void main() {
   });
 
   group('appRouterProvider redirect — navigation authorization', () {
-    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user) async {
+    Future<GoRouter> pumpRouterAs(WidgetTester tester, AuthUser user, {bool v5Enabled = false}) async {
       late GoRouter router;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             authServiceProvider.overrideWithValue(_FixedAuthService(user)),
+            enkiduShadowViewEnabledProvider.overrideWithValue(v5Enabled),
+            enkiduShadowObservationsProvider.overrideWith(
+              (ref) async => const <Map<String, dynamic>>[],
+            ),
           ],
           child: Consumer(
             builder: (context, ref, _) {
@@ -204,7 +209,7 @@ void main() {
         final router = await pumpRouterAs(tester, client);
         expect(locationOf(router), '/dashboard');
 
-        for (final path in ['/scanner', '/signals', '/signals/87654321-4321-4321-4321-210987654321', '/ea']) {
+        for (final path in ['/scanner', '/signals', '/signals/87654321-4321-4321-4321-210987654321', '/ea', '/enkidu-shadow']) {
           router.go(path);
           await settle(tester);
           expect(
@@ -234,6 +239,25 @@ void main() {
         expect(locationOf(router), path,
             reason: 'OWNER must not be redirected away from $path',);
       }
+    });
+
+    testWidgets('customer deep link to V5 is denied even when view flag is on', (tester) async {
+      const client = AuthUser(id:'u_client',email:'client@example.com',displayName:'Client',
+          role:AppRole.client,permissions:PermissionSet.none);
+      final router = await pumpRouterAs(tester, client, v5Enabled:true);
+      router.go('/enkidu-shadow');
+      await settle(tester);
+      expect(locationOf(router), '/dashboard');
+    });
+
+    testWidgets('OWNER can open the V5 view only when locally enabled', (tester) async {
+      const owner = AuthUser(id:'u_owner',email:'owner@example.com',displayName:'Owner',
+          role:AppRole.owner,permissions:PermissionSet.none);
+      final router = await pumpRouterAs(tester, owner, v5Enabled:true);
+      router.go('/enkidu-shadow');
+      await settle(tester);
+      expect(locationOf(router), '/enkidu-shadow');
+      expect(find.text('ENKIDU V5 SHADOW'), findsOneWidget);
     });
   });
 

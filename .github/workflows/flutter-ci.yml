@@ -32,6 +32,17 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
+      - name: Check ENKIDU bridge Dart formatting
+        run: >-
+          dart format --output=none --set-exit-if-changed
+          lib/core/routing/app_router.dart
+          lib/core/routing/app_shell.dart
+          lib/core/routing/nav_destination.dart
+          lib/features/enkidu_shadow/enkidu_shadow_screen.dart
+          test/core/routing/app_router_test.dart
+          test/core/routing/nav_destination_test.dart
+          test/features/auth/backend_permission_mapping_test.dart
+          test/features/enkidu_shadow/enkidu_shadow_screen_test.dart
       - run: flutter analyze
       - run: flutter test
       - run: python3 -m unittest discover -s scripts -p test_firebase_config.py

@@ -161,7 +161,11 @@ void main() {
       });
 
       final visible = visibleNavDestinationsFor(owner).map((d) => d.path).toSet();
-      expect(visible, primaryNavDestinations.map((d) => d.path).toSet());
+      expect(visible,
+          primaryNavDestinations.where((d) => !d.ownerOnly).map((d) => d.path).toSet());
+      expect(visibleNavDestinationsFor(owner, enkiduShadowEnabled: true)
+          .map((d) => d.path).toSet(),
+          primaryNavDestinations.map((d) => d.path).toSet());
     });
 
     test('a restricted client only sees the modules its backend permissions grant', () {
