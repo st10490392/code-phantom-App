@@ -194,13 +194,21 @@ jobs:
           retention-days: 30
 
       - name: Retain verified private RC
+        id: retain_rc
         if: inputs.release_candidate_r1
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: CodePhantom-Android-RC-R1-code14-${{ github.run_id }}
           path: build/android-rc-r1/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Retain RC privately when Actions storage is unavailable
+        if: ${{ inputs.release_candidate_r1 && steps.retain_rc.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/retain_private_rc_r1.py
 
       # Obfuscation symbols are needed to de-obfuscate crash stack traces.
       # Kept as a private workflow artifact - never attached to a public release.

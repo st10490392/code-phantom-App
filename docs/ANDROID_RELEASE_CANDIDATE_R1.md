@@ -29,8 +29,14 @@ transport is compiled, while registration and permission remain user opt-in.
 
 The private artifact includes the APK, verification JSON, checksum, resolved
 dependency lockfile and obfuscation symbols. It expires after 30 days. No
-signing material is included. If upload quota fails, inspect a supported private
-retrieval alternative; do not delete evidence, publish, or log APK bytes.
+signing material is included. Actions quota was confirmed full during this
+checkpoint. If artifact upload fails, the workflow retains these files in an
+**unpublished draft release in the existing private App repository**. It checks
+repository privacy and draft/unpublished state before and after retention;
+it never publishes a release, creates a Git ref, changes visibility or deletes
+evidence. This fallback does not expire automatically. Signing material is
+already removed before either retention method. Neither APK bytes nor tokens
+are logged. The final result must include successful authenticated retrieval.
 
 Tests: `python -B -m unittest discover -s scripts -p test_android_rc_r1.py`.
 Fixture tests enforce wrong destination, enabled V5, wrong signer, downgraded

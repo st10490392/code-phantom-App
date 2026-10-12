@@ -5,6 +5,7 @@ import tempfile
 import unittest
 import zipfile
 import android_rc_r1 as rc
+from retain_private_rc_r1 import assert_private_draft
 
 
 class AndroidReleaseCandidateTests(unittest.TestCase):
@@ -73,9 +74,20 @@ class AndroidReleaseCandidateTests(unittest.TestCase):
             write(altered, rc.API_URL)
             with self.assertRaises(ValueError):
                 rc.verify_embedded(apk, expected)
+
             write(expected, 'https://other.example')
             with self.assertRaises(ValueError):
                 rc.verify_embedded(apk, expected)
+
+    def test_retention_refuses_public_repository_or_published_release(self):
+        repository = {'full_name': 'st10490392/code-phantom-App', 'private': True}
+        draft = {'draft': True, 'published_at': None}
+        assert_private_draft(repository, draft)
+        for repo, release in [(dict(repository, private=False), draft),
+                              (repository, dict(draft, draft=False)),
+                              (repository, dict(draft, published_at='2026-10-12T00:00:00Z'))]:
+            with self.assertRaises(ValueError):
+                assert_private_draft(repo, release)
 
 
 if __name__ == '__main__':
