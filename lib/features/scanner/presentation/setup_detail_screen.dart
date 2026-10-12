@@ -8,6 +8,7 @@ import '../../../core/utilities/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/scanner_enums.dart';
 import '../domain/scanner_setup.dart';
+import '../../auth/presentation/auth_providers.dart';
 import 'edit_setup_sheet.dart';
 import 'reject_reason_sheet.dart';
 import 'scanner_providers.dart';
@@ -48,6 +49,7 @@ class SetupDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final showDiagnostics = ref.watch(hasPermissionProvider(Permission.scannerReview));
     final isBuy = setup.direction == SetupDirection.buy;
     final reviewState = ref.watch(scannerReviewControllerProvider);
     final isPending = setup.status == SetupStatus.pending;
@@ -78,19 +80,19 @@ class SetupDetailBody extends ConsumerWidget {
         if (setup.tp2 != null) _row(context, 'TP2', setup.tp2!.toStringAsFixed(5)),
         if (setup.tp3 != null) _row(context, 'TP3', setup.tp3!.toStringAsFixed(5)),
         if (setup.market != null) _row(context, 'Market', setup.market!),
-        if (setup.brokerSymbol != null) _row(context, 'Broker symbol', setup.brokerSymbol!),
-        if (setup.weeklyBias.isKnown) _row(context, 'Weekly bias', setup.weeklyBias.wireValue),
-        if (setup.dailyBias.isKnown) _row(context, 'Daily bias', setup.dailyBias.wireValue),
-        if (setup.session.isKnown) _row(context, 'Session', setup.session.wireValue.replaceAll('_', ' ')),
-        if (setup.confluenceMaximum > 0)
+        if (showDiagnostics && setup.brokerSymbol != null) _row(context, 'Broker symbol', setup.brokerSymbol!),
+        if (showDiagnostics && setup.weeklyBias.isKnown) _row(context, 'Weekly bias', setup.weeklyBias.wireValue),
+        if (showDiagnostics && setup.dailyBias.isKnown) _row(context, 'Daily bias', setup.dailyBias.wireValue),
+        if (showDiagnostics && setup.session.isKnown) _row(context, 'Session', setup.session.wireValue.replaceAll('_', ' ')),
+        if (showDiagnostics && setup.confluenceMaximum > 0)
           _row(context, 'Confluence', '${setup.confluenceScore}/${setup.confluenceMaximum}'),
         _row(context, 'Detected', '${utcTimestamp(setup.detectedAt)} (${relativeTime(setup.detectedAt)})'),
-        if (setup.strategyProfile != null) _row(context, 'Strategy', setup.strategyProfile!),
-        if (setup.externalId != null) _row(context, 'Scanner ID', setup.externalId!),
-        if (setup.notes != null) _row(context, 'Notes', setup.notes!),
-        if (setup.rejectionReason != null) _row(context, 'Rejection reason', setup.rejectionReason!),
-        if (setup.reviewedBy != null) _row(context, 'Reviewed by', setup.reviewedBy!),
-        if (setup.reviewedAt != null) _row(context, 'Reviewed', relativeTime(setup.reviewedAt!)),
+        if (showDiagnostics && setup.strategyProfile != null) _row(context, 'Strategy', setup.strategyProfile!),
+        if (showDiagnostics && setup.externalId != null) _row(context, 'Scanner ID', setup.externalId!),
+        if (showDiagnostics && setup.notes != null) _row(context, 'Notes', setup.notes!),
+        if (showDiagnostics && setup.rejectionReason != null) _row(context, 'Rejection reason', setup.rejectionReason!),
+        if (showDiagnostics && setup.reviewedBy != null) _row(context, 'Reviewed by', setup.reviewedBy!),
+        if (showDiagnostics && setup.reviewedAt != null) _row(context, 'Reviewed', relativeTime(setup.reviewedAt!)),
         const SizedBox(height: AppSpacing.xl),
         if (isPending && ref.watch(scannerReviewActionsEnabledProvider))
           PermissionGate(

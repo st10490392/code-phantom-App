@@ -9,9 +9,10 @@ import '../../domain/scanner_setup.dart';
 import '../setup_status_style.dart';
 
 class SetupCard extends StatelessWidget {
-  const SetupCard({required this.setup, this.onTap, super.key});
+  const SetupCard({required this.setup, this.onTap, this.showDiagnostics = false, super.key});
 
   final ScannerSetup setup;
+  final bool showDiagnostics;
   final VoidCallback? onTap;
 
   @override
@@ -55,12 +56,12 @@ class SetupCard extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               if (setup.market != null) PhantomChip(label: setup.market!),
-              if (setup.weeklyBias.isKnown) PhantomChip(label: 'Weekly ${setup.weeklyBias.wireValue}'),
-              if (setup.dailyBias.isKnown) PhantomChip(label: 'Daily ${setup.dailyBias.wireValue}'),
-              if (setup.session.isKnown) PhantomChip(label: setup.session.wireValue.replaceAll('_', ' ')),
-              if (setup.confluenceMaximum > 0)
+              if (showDiagnostics && setup.weeklyBias.isKnown) PhantomChip(label: 'Weekly ${setup.weeklyBias.wireValue}'),
+              if (showDiagnostics && setup.dailyBias.isKnown) PhantomChip(label: 'Daily ${setup.dailyBias.wireValue}'),
+              if (showDiagnostics && setup.session.isKnown) PhantomChip(label: setup.session.wireValue.replaceAll('_', ' ')),
+              if (showDiagnostics && setup.confluenceMaximum > 0)
                 PhantomChip(label: 'Confluence ${setup.confluenceScore}/${setup.confluenceMaximum}'),
-              if (setup.strategyProfile != null) PhantomChip(label: setup.strategyProfile!),
+              if (showDiagnostics && setup.strategyProfile != null) PhantomChip(label: setup.strategyProfile!),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

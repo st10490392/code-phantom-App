@@ -11,7 +11,8 @@ import '../auth/fake_secure_storage.dart';
 
 typedef _Route = FakeResponse Function(RequestOptions options);
 
-Future<({ApiSignalService service, void Function(String, String, _Route) mock})> _build() async {
+Future<({ApiSignalService service, void Function(String, String, _Route) mock})>
+    _build() async {
   final tokenStorage = TokenStorage(FakeSecureStorage());
   await tokenStorage.save(
     accessToken: 'test-access-token',
@@ -31,35 +32,42 @@ Future<({ApiSignalService service, void Function(String, String, _Route) mock})>
     return route(options);
   });
 
-  final client = ApiClient(baseUrl: 'http://test.local/api/v1', tokenStorage: tokenStorage, dio: dio);
+  final client = ApiClient(
+      baseUrl: 'http://test.local/api/v1',
+      tokenStorage: tokenStorage,
+      dio: dio,);
   return (service: ApiSignalService(client), mock: mock);
 }
 
 void main() {
   test('watchSignals decodes real backend rows, not fixture signals', () async {
     final b = await _build();
-    b.mock('GET', '/signals', (_) => const FakeResponse(
-          statusCode: 200,
-          body: {
-            'data': [
-              {
-                'id': 'signal_real_001',
-                'source_setup_id': 'setup_real_001',
-                'symbol': 'EURUSD',
-                'direction': 'SELL',
-                'entry': '1.0850',
-                'stop_loss': '1.0880',
-                'take_profits': ['1.0800'],
-                'status': 'ACTIVE',
-                'created_at': '2026-09-20T09:00:00Z',
-                'closed_at': null,
-                'result': null,
-                'r_multiple': null,
-                'notes': 'Real staging signal.',
-              },
-            ],
-          },
-        ),);
+    b.mock(
+      'GET',
+      '/signals',
+      (_) => const FakeResponse(
+        statusCode: 200,
+        body: {
+          'data': [
+            {
+              'id': 'signal_real_001',
+              'source_setup_id': 'setup_real_001',
+              'symbol': 'EURUSD',
+              'direction': 'SELL',
+              'entry': '1.0850',
+              'stop_loss': '1.0880',
+              'take_profits': ['1.0800'],
+              'status': 'ACTIVE',
+              'created_at': '2026-09-20T09:00:00Z',
+              'closed_at': null,
+              'result': null,
+              'r_multiple': null,
+              'notes': 'Real staging signal.',
+            },
+          ],
+        },
+      ),
+    );
 
     final signals = await b.service.watchSignals().first;
 
@@ -71,26 +79,47 @@ void main() {
     expect(signal.entry, 1.0850);
   });
 
-  test('performanceSummary is computed from real closed signals, not fixture win/loss counts',
+  test(
+      'performanceSummary is computed from real closed signals, not fixture win/loss counts',
       () async {
     final b = await _build();
-    b.mock('GET', '/signals', (_) => const FakeResponse(
-          statusCode: 200,
-          body: {
-            'data': [
-              {
-                'id': 's1', 'symbol': 'EURUSD', 'direction': 'BUY', 'entry': '1', 'stop_loss': '0.99',
-                'take_profits': ['1.02'], 'status': 'CLOSED', 'created_at': '2026-09-01T00:00:00Z',
-                'closed_at': '2026-09-02T00:00:00Z', 'result': 'WIN', 'r_multiple': '2.0',
-              },
-              {
-                'id': 's2', 'symbol': 'GBPUSD', 'direction': 'SELL', 'entry': '1', 'stop_loss': '1.01',
-                'take_profits': ['0.98'], 'status': 'STOPPED', 'created_at': '2026-09-01T00:00:00Z',
-                'closed_at': '2026-09-02T00:00:00Z', 'result': 'LOSS', 'r_multiple': '-1.0',
-              },
-            ],
-          },
-        ),);
+    b.mock(
+      'GET',
+      '/signals',
+      (_) => const FakeResponse(
+        statusCode: 200,
+        body: {
+          'data': [
+            {
+              'id': 's1',
+              'symbol': 'EURUSD',
+              'direction': 'BUY',
+              'entry': '1',
+              'stop_loss': '0.99',
+              'take_profits': ['1.02'],
+              'status': 'CLOSED',
+              'created_at': '2026-09-01T00:00:00Z',
+              'closed_at': '2026-09-02T00:00:00Z',
+              'result': 'WIN',
+              'r_multiple': '2.0',
+            },
+            {
+              'id': 's2',
+              'symbol': 'GBPUSD',
+              'direction': 'SELL',
+              'entry': '1',
+              'stop_loss': '1.01',
+              'take_profits': ['0.98'],
+              'status': 'STOPPED',
+              'created_at': '2026-09-01T00:00:00Z',
+              'closed_at': '2026-09-02T00:00:00Z',
+              'result': 'LOSS',
+              'r_multiple': '-1.0',
+            },
+          ],
+        },
+      ),
+    );
 
     final summary = await b.service.performanceSummary();
 
@@ -99,6 +128,45 @@ void main() {
     expect(summary.losses, 1);
     expect(summary.winRatePercent, 50);
     expect(summary.averageRMultiple, 0.5);
+  });
+
+  test('cancelled and ambiguous observations never count as wins', () async {
+    final b = await _build();
+    b.mock(
+        'GET',
+        '/signals',
+        (_) => const FakeResponse(statusCode: 200, body: {
+              'data': [
+                {
+                  'id': 'cancelled',
+                  'symbol': 'EURUSD',
+                  'direction': 'BUY',
+                  'entry': '1',
+                  'stop_loss': '0.9',
+                  'take_profits': ['1.2'],
+                  'status': 'CANCELLED',
+                  'created_at': '2026-09-01T00:00:00Z',
+                  'result': 'WIN',
+                  'r_multiple': '2',
+                },
+                {
+                  'id': 'ambiguous',
+                  'symbol': 'EURUSD',
+                  'direction': 'BUY',
+                  'entry': '1',
+                  'stop_loss': '0.9',
+                  'take_profits': ['1.2'],
+                  'status': 'CLOSED',
+                  'created_at': '2026-09-01T00:00:00Z',
+                  'result': 'PENDING',
+                  'r_multiple': null,
+                },
+              ],
+            },),);
+    final summary = await b.service.performanceSummary();
+    expect(summary.totalSignals, 0);
+    expect(summary.wins, 0);
+    expect(summary.losses, 0);
   });
 
   group('signal management stays paused until backtests pass', () {
@@ -110,7 +178,8 @@ void main() {
       );
     });
 
-    test('createFromSetup throws — only the backend creates a signal from an approved setup',
+    test(
+        'createFromSetup throws — only the backend creates a signal from an approved setup',
         () async {
       final b = await _build();
       final setup = ScannerSetup(
@@ -130,7 +199,8 @@ void main() {
         detectedAt: DateTime.now(),
       );
 
-      await expectLater(b.service.createFromSetup(setup), throwsA(isA<StateError>()));
+      await expectLater(
+          b.service.createFromSetup(setup), throwsA(isA<StateError>()),);
     });
   });
 }
