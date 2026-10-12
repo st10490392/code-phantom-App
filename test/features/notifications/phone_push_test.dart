@@ -78,7 +78,9 @@ void main() {
     requests = [];
     offline = false;
     responseStatus = 200;
-    responseBody = {'data': {'id': '33333333-3333-4333-8333-333333333333'}};
+    responseBody = {
+      'data': {'id': '33333333-3333-4333-8333-333333333333'}
+    };
     deviceIds.clear();
     tokens = TokenStorage(storage);
     await tokens.save(
@@ -147,11 +149,13 @@ void main() {
     );
   });
 
-  test('unlicensed OWNER submits no claimed role or invented licence binding', () async {
+  test('unlicensed OWNER submits no claimed role or invented licence binding',
+      () async {
     await controller.setUser('owner');
     await controller.enable();
     expect(controller.registered, isTrue);
-    expect((requests.single.data as Map).keys.toSet(), {'installation_id', 'token', 'platform'});
+    expect((requests.single.data as Map).keys.toSet(),
+        {'installation_id', 'token', 'platform'});
     expect(requests.single.headers['Authorization'], 'Bearer user-token');
   });
 
@@ -181,16 +185,24 @@ void main() {
     expect(controller.error, isNotNull);
   });
 
-  test('backend device denial remains denied and has a sanitized message', () async {
+  test('backend device denial remains denied and has a sanitized message',
+      () async {
     responseStatus = 403;
-    responseBody = {'error': {'code': 'DEVICE_REQUIRED', 'message': 'fixture-sensitive-details'}};
+    responseBody = {
+      'error': {
+        'code': 'DEVICE_REQUIRED',
+        'message': 'fixture-sensitive-details'
+      }
+    };
     await controller.setUser('owner');
     await controller.enable();
     expect(controller.registered, isFalse);
     expect(controller.error, contains('not authorized'));
     expect(controller.error, isNot(contains('fixture-sensitive-details')));
     responseStatus = 200;
-    responseBody = {'data': {'id': '33333333-3333-4333-8333-333333333333'}};
+    responseBody = {
+      'data': {'id': '33333333-3333-4333-8333-333333333333'}
+    };
     await controller.resume();
     expect(controller.registered, isTrue);
   });

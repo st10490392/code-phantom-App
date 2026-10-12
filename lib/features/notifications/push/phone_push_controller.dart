@@ -51,7 +51,8 @@ class PhonePushController extends ChangeNotifier {
       try {
         await action();
       } on AuthorizationException {
-        error = 'This account or device is not authorized for phone alerts. Contact CodePhantom support.';
+        error =
+            'This account or device is not authorized for phone alerts. Contact CodePhantom support.';
       } on AuthenticationException {
         error = 'Sign in again to update phone alerts.';
       } on SessionExpiredException {
@@ -183,7 +184,9 @@ class PhonePushController extends ChangeNotifier {
     );
     if (generation != _generation || _user != userId || !enabled) return;
     final data = response['data'];
-    if (data is! Map || data['id'] is! String || !_uuid.hasMatch(data['id'] as String)) {
+    if (data is! Map ||
+        data['id'] is! String ||
+        !_uuid.hasMatch(data['id'] as String)) {
       throw StateError('Registration acknowledgement missing');
     }
     registered = true;
@@ -222,6 +225,7 @@ class PhonePushController extends ChangeNotifier {
   Future<void> enable() => _run(() async {
         final generation = _generation;
         if (_user == null) return;
+        registered = false;
         final transport = await _initialize();
         enabled = await transport.permission(prompt: true);
         await storage.write('push_enabled', enabled.toString());

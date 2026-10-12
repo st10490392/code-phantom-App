@@ -88,9 +88,12 @@ class PhonePushSettings extends ConsumerWidget {
         children: [
           SwitchListTile(
             title: const Text('Signal alerts'),
-            subtitle: Text(push.error ?? (push.enabled && !push.registered
-                ? 'Phone alert registration is pending.'
-                : 'New signals and take-profit or stop-loss results.')),
+            subtitle: Text(
+              push.error ??
+                  (push.enabled && !push.registered
+                      ? 'Phone alert registration is pending.'
+                      : 'New signals and take-profit or stop-loss results.'),
+            ),
             value: push.enabled,
             onChanged: push.busy ? null : (value) => unawaited(value ? push.enable() : push.disable()),
           ),
