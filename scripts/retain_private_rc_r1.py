@@ -53,7 +53,7 @@ def main():
     rc.require(verification['build_identity']['source_commit'] == os.environ.get('GITHUB_SHA'), 'Retention source mismatch.')
     release = request(base + '/releases', json.dumps({
         'tag_name': 'private-android-rc-r1-' + os.environ['GITHUB_RUN_ID'],
-        'target_commitish': os.environ['GITHUB_SHA'], 'name': f'PRIVATE Android CP-APP-022 — code {rc.VERSION_CODE}',
+        'target_commitish': os.environ['GITHUB_SHA'], 'name': f'PRIVATE Android CP-APP-023 — code {rc.VERSION_CODE}',
         'body': 'Unpublished private owner candidate. No deployment or ENKIDU activation.\nSource: ' + os.environ['GITHUB_SHA'] +
                 '\nAPK SHA-256: ' + verification['apk_sha256'],
         'draft': True, 'prerelease': True, 'generate_release_notes': False,

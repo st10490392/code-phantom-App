@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/routing/app_router.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -7,6 +8,7 @@ import '../presentation/notifications_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
 import 'phone_push_controller.dart';
 import 'phone_push_providers.dart';
+import 'staging_push_test.dart';
 
 class PhonePushListener extends ConsumerStatefulWidget {
   const PhonePushListener({required this.child, super.key});
@@ -35,6 +37,16 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
       _push.foreground.listen(
         (alert) {
           if (!mounted || ref.read(currentUserProvider) == null) return;
+          if (alert.isStagingTest) {
+            if (stagingTestVisible(ref.read(appEnvironmentProvider),
+                ref.read(currentUserProvider)?.isOwner == true,
+                !kIsWeb && defaultTargetPlatform == TargetPlatform.android)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(alert.title)),
+              );
+            }
+            return;
+          }
           ref.invalidate(notificationListProvider);
           ref.invalidate(signalsByStatusProvider);
           ref.invalidate(activeSignalsProvider);
@@ -53,6 +65,14 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
       _push.opened.listen(
         (alert) {
           if (!mounted) return;
+          if (alert.isStagingTest) {
+            if (stagingTestVisible(ref.read(appEnvironmentProvider),
+                ref.read(currentUserProvider)?.isOwner == true,
+                !kIsWeb && defaultTargetPlatform == TargetPlatform.android)) {
+              ref.read(appRouterProvider).go('/settings');
+            }
+            return;
+          }
           ref.invalidate(notificationListProvider);
           ref.read(appRouterProvider).go(alert.signalPath);
         },
@@ -99,6 +119,7 @@ class PhonePushSettings extends ConsumerWidget {
           ),
           if (push.error != null && push.enabled)
             TextButton(onPressed: push.busy ? null : () => unawaited(push.resume()), child: const Text('Retry')),
+          const StagingPushTestAction(),
         ],
       ),
     );

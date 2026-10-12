@@ -37,6 +37,11 @@ jobs:
           # Require committed analyzer fixes as well as formatter output.
           dart fix --apply
           dart format --output=write \
+            lib/core/network/api_client.dart \
+            lib/features/notifications/push/staging_push_test.dart \
+            lib/features/notifications/push/phone_alert.dart \
+            lib/features/notifications/push/phone_push_listener.dart \
+            test/features/notifications/staging_push_test.dart \
             lib/core/routing/app_router.dart \
             lib/core/routing/app_shell.dart \
             lib/core/routing/nav_destination.dart \

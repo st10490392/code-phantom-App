@@ -14,7 +14,7 @@ class AndroidReleaseCandidateTests(unittest.TestCase):
                     'GITHUB_REF': rc.BRANCH, 'GITHUB_REPOSITORY': 'st10490392/code-phantom-App',
                     'GITHUB_SHA': 'a' * 40, 'ENKIDU_REQUESTED': 'false'}
         self.badging = "\n".join([
-            "package: name='com.codephantom.app' versionCode='15' versionName='1.0.1-rc2'",
+            "package: name='com.codephantom.app' versionCode='16' versionName='1.0.1-rc3'",
             "sdkVersion:'24'", "targetSdkVersion:'36'",
             "uses-permission: name='android.permission.INTERNET'",
             "uses-permission: name='android.permission.POST_NOTIFICATIONS'",
@@ -35,15 +35,15 @@ class AndroidReleaseCandidateTests(unittest.TestCase):
         self.assertFalse(identity['execution_enabled'])
         self.assertFalse(identity['customer_publication_enabled'])
         args = rc.build_arguments()
-        self.assertIn('--build-number=15', args)
+        self.assertIn('--build-number=16', args)
         self.assertIn('--dart-define=API_BASE_URL=' + rc.API_URL, args)
         self.assertIn('--dart-define=ENKIDU_SHADOW_VIEW_ENABLED=false', args)
         self.assertIn('--dart-define=SCANNER_REVIEW_ACTIONS=false', args)
 
     def test_actual_manifest_rejects_wrong_identity_version_sdk_and_permissions(self):
-        self.assertEqual(rc.parse_badging(self.badging)['version_code'], 15)
+        self.assertEqual(rc.parse_badging(self.badging)['version_code'], 16)
         for invalid in [self.badging.replace('com.codephantom.app', 'other.app'),
-                        self.badging.replace("versionCode='15'", "versionCode='14'"),
+                        self.badging.replace("versionCode='16'", "versionCode='14'"),
                         self.badging.replace("sdkVersion:'24'", "sdkVersion:'26'"),
                         self.badging + "\nuses-permission: name='android.permission.READ_CONTACTS'",
                         self.badging + '\napplication-debuggable',
