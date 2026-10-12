@@ -46,14 +46,14 @@ def main():
     assert_private_draft(repository, {'draft': True, 'published_at': None})
     folder = rc.ROOT / 'build/android-rc-r1'
     verification = json.loads((folder / 'verification.json').read_text())
-    apk = folder / 'CodePhantom-1.0.1-rc1-code14.apk'
+    apk = folder / rc.APK_FILENAME
     rc.require(hashlib.sha256(apk.read_bytes()).hexdigest() == verification['apk_sha256'], 'Retention APK hash mismatch.')
     rc.require(verification['signature_verified'] and verification['certificate_sha256'] == rc.CERTIFICATE,
                'Only the verified original-signer APK may be retained.')
     rc.require(verification['build_identity']['source_commit'] == os.environ.get('GITHUB_SHA'), 'Retention source mismatch.')
     release = request(base + '/releases', json.dumps({
         'tag_name': 'private-android-rc-r1-' + os.environ['GITHUB_RUN_ID'],
-        'target_commitish': os.environ['GITHUB_SHA'], 'name': 'PRIVATE Android RC R1 — code 14',
+        'target_commitish': os.environ['GITHUB_SHA'], 'name': f'PRIVATE Android CP-APP-022 — code {rc.VERSION_CODE}',
         'body': 'Unpublished private owner candidate. No deployment or ENKIDU activation.\nSource: ' + os.environ['GITHUB_SHA'] +
                 '\nAPK SHA-256: ' + verification['apk_sha256'],
         'draft': True, 'prerelease': True, 'generate_release_notes': False,

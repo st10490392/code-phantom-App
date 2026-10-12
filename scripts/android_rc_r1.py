@@ -12,9 +12,10 @@ import zipfile
 PACKAGE = 'com.codephantom.app'
 CERTIFICATE = '67b51a8fa5577620451f83c767cc3c41b72e38464ee6f47a1707e5815622b7ae'
 API_URL = 'https://code-phantom-backend-staging.up.railway.app/api/v1'
-VERSION_CODE = 14
-VERSION_NAME = '1.0.1-rc1'
-BRANCH = 'refs/heads/reconcile/enkidu-staging-r1'
+VERSION_CODE = 15
+VERSION_NAME = '1.0.1-rc2'
+BRANCH = 'refs/heads/fix/cp-app-022-owner-phone-alerts'
+APK_FILENAME = f'CodePhantom-{VERSION_NAME}-code{VERSION_CODE}.apk'
 ASSET = 'assets/brand/android_rc_r1_identity.json'
 APK_ASSET = 'assets/flutter_assets/' + ASSET
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,7 +36,7 @@ def require(condition, message):
 def identity(environment):
     require(environment.get('API_BASE_URL') == API_URL, 'RC requires the reviewed staging API URL.')
     require(environment.get('GITHUB_EVENT_NAME') == 'workflow_dispatch', 'RC is manual/private only.')
-    require(environment.get('GITHUB_REF') == BRANCH, 'RC requires the existing reconciliation branch.')
+    require(environment.get('GITHUB_REF') == BRANCH, 'RC requires the isolated CP-APP-022 branch.')
     require(environment.get('GITHUB_REPOSITORY') == 'st10490392/code-phantom-App', 'Unexpected RC repository.')
     require(environment.get('ENKIDU_REQUESTED', 'false') == 'false', 'ENKIDU must remain disabled.')
     commit = environment.get('GITHUB_SHA', '')
@@ -73,7 +74,7 @@ def parse_badging(text):
     require(sdk is not None and target is not None, 'APK SDK metadata missing.')
     permissions = set(re.findall(r"^uses-permission(?:-sdk-\d+)?: name='([^']+)'", text, re.M))
     require(match[1] == PACKAGE, 'APK application ID mismatch.')
-    require(int(match[2]) == VERSION_CODE and int(match[2]) > 13, 'APK version code mismatch.')
+    require(int(match[2]) == VERSION_CODE and int(match[2]) > 14, 'APK version code mismatch.')
     require(match[3] == VERSION_NAME, 'APK version name mismatch.')
     require(int(sdk[1]) == 24 and int(target[1]) == 36, 'Unexpected SDK compatibility change.')
     require('application-debuggable' not in text, 'APK is debuggable.')
@@ -124,7 +125,7 @@ def verify():
                    'build_identity': expected, 'physical_upgrade_tested': False})
     output = ROOT / 'build/android-rc-r1'
     output.mkdir(parents=True, exist_ok=True)
-    filename = 'CodePhantom-1.0.1-rc1-code14.apk'
+    filename = APK_FILENAME
     shutil.copyfile(apk, output / filename)
     shutil.copyfile(ROOT / 'pubspec.lock', output / 'resolved-pubspec.lock')
     shutil.copytree(ROOT / 'build/debug-info', output / 'debug-symbols', dirs_exist_ok=True)
@@ -146,7 +147,7 @@ def main():
             (ROOT / ASSET).write_text(json.dumps(expected, indent=2) + '\n')
             subprocess.run(build_arguments(), cwd=ROOT, check=True)
         else:
-            print('Private RC request validated; code 14, staging, V5/execution/publication disabled.')
+            print('Private RC request validated; code 15, staging, V5/execution/publication disabled.')
     else:
         verify()
 

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/app_exceptions.dart';
 import '../../../core/storage/secure_storage.dart';
 import 'phone_alert.dart';
 import 'push_transport.dart';
@@ -24,6 +25,8 @@ class PhonePushController extends ChangeNotifier {
   final Future<String?> Function(String userId)? boundDeviceId;
   bool get available => createTransport != null;
   bool enabled = false;
+  // Opt-in is retained for retry; registration is confirmed only by the API.
+  bool registered = false;
   bool busy = false;
   String? error;
   String? _user;
@@ -47,6 +50,13 @@ class PhonePushController extends ChangeNotifier {
       notifyListeners();
       try {
         await action();
+      } on AuthorizationException {
+        error =
+            'This account or device is not authorized for phone alerts. Contact CodePhantom support.';
+      } on AuthenticationException {
+        error = 'Sign in again to update phone alerts.';
+      } on SessionExpiredException {
+        error = 'Sign in again to update phone alerts.';
       } catch (_) {
         error = 'Unable to update phone alerts. Try again.';
       } finally {
@@ -143,6 +153,7 @@ class PhonePushController extends ChangeNotifier {
 
   Future<void> _register(int generation, {String? token}) async {
     if (generation != _generation || _user == null || !enabled) return;
+    registered = false;
     final userId = _user!;
     final transport = await _initialize();
     if (!await transport.permission(prompt: false)) {
@@ -155,11 +166,14 @@ class PhonePushController extends ChangeNotifier {
     final installation = await _installationId();
     final deviceId = await boundDeviceId?.call(userId);
     if (generation != _generation || _user == null || !enabled) return;
+    if (deviceId != null && !_uuid.hasMatch(deviceId)) {
+      throw StateError('Invalid account device identity');
+    }
     if (value == null) {
       error = 'Phone alerts are still connecting. Try again shortly.';
       return;
     }
-    await api.post(
+    final response = await api.post(
       '/notifications/push/register',
       body: {
         'installation_id': installation,
@@ -168,13 +182,26 @@ class PhonePushController extends ChangeNotifier {
         if (deviceId != null) 'device_id': deviceId,
       },
     );
+    if (generation != _generation || _user != userId || !enabled) return;
+    final data = response['data'];
+    if (data is! Map ||
+        data['id'] is! String ||
+        !_uuid.hasMatch(data['id'] as String)) {
+      throw StateError('Registration acknowledgement missing');
+    }
+    registered = true;
   }
+
+  static final _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
 
   Future<void> setUser(String? userId) {
     if (_user == userId) return userId == null ? resume() : Future.value();
     _seenForeground.clear();
     _seenOpened.clear();
     _user = userId;
+    registered = false;
     final generation = ++_generation;
     return _run(() async {
       enabled = await storage.read('push_enabled') == 'true';
@@ -198,6 +225,7 @@ class PhonePushController extends ChangeNotifier {
   Future<void> enable() => _run(() async {
         final generation = _generation;
         if (_user == null) return;
+        registered = false;
         final transport = await _initialize();
         enabled = await transport.permission(prompt: true);
         await storage.write('push_enabled', enabled.toString());
@@ -229,6 +257,7 @@ class PhonePushController extends ChangeNotifier {
   Future<void> disable() {
     ++_generation;
     enabled = false;
+    registered = false;
     return _run(() async {
       await storage.write('push_enabled', 'false');
       await _unregister();
@@ -239,6 +268,7 @@ class PhonePushController extends ChangeNotifier {
   Future<void> beforeLogout() {
     _user = null;
     enabled = false;
+    registered = false;
     ++_generation;
     return _run(() async {
       await storage.write('push_enabled', 'false');
