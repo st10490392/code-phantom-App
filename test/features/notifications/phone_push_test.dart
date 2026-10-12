@@ -79,7 +79,7 @@ void main() {
     offline = false;
     responseStatus = 200;
     responseBody = {
-      'data': {'id': '33333333-3333-4333-8333-333333333333'}
+      'data': {'id': '33333333-3333-4333-8333-333333333333'},
     };
     deviceIds.clear();
     tokens = TokenStorage(storage);
@@ -154,8 +154,10 @@ void main() {
     await controller.setUser('owner');
     await controller.enable();
     expect(controller.registered, isTrue);
-    expect((requests.single.data as Map).keys.toSet(),
-        {'installation_id', 'token', 'platform'});
+    expect(
+      (requests.single.data as Map).keys.toSet(),
+      {'installation_id', 'token', 'platform'},
+    );
     expect(requests.single.headers['Authorization'], 'Bearer user-token');
   });
 
@@ -191,8 +193,8 @@ void main() {
     responseBody = {
       'error': {
         'code': 'DEVICE_REQUIRED',
-        'message': 'fixture-sensitive-details'
-      }
+        'message': 'fixture-sensitive-details',
+      },
     };
     await controller.setUser('owner');
     await controller.enable();
@@ -201,7 +203,7 @@ void main() {
     expect(controller.error, isNot(contains('fixture-sensitive-details')));
     responseStatus = 200;
     responseBody = {
-      'data': {'id': '33333333-3333-4333-8333-333333333333'}
+      'data': {'id': '33333333-3333-4333-8333-333333333333'},
     };
     await controller.resume();
     expect(controller.registered, isTrue);
