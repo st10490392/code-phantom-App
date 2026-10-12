@@ -28,18 +28,22 @@ void main() {
         role: AppRole.client,
         permissions: PermissionSet({Permission.scannerAccess}),
       );
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          currentUserProvider.overrideWithValue(client),
-          boundDeviceIdProvider(client.id)
-              .overrideWith((ref) async => bound ? 'bound-device' : null),
-        ],
-        child: const MaterialApp(home: DashboardScreen()),
-      ));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserProvider.overrideWithValue(client),
+            boundDeviceIdProvider(client.id)
+                .overrideWith((ref) async => bound ? 'bound-device' : null),
+          ],
+          child: const MaterialApp(home: DashboardScreen()),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(find.byType(ClientDeviceBindingRequiredView),
-          bound ? findsNothing : findsOneWidget);
+      expect(
+        find.byType(ClientDeviceBindingRequiredView),
+        bound ? findsNothing : findsOneWidget,
+      );
       expect(find.text(_scanner), bound ? findsOneWidget : findsNothing);
       expect(find.text('ENKIDU V5 SHADOW'), findsNothing);
     });

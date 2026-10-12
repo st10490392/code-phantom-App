@@ -10,12 +10,13 @@ import 'push_transport.dart';
 /// Serializes registration / rotation / logout. Late token callbacks cannot
 /// re-register a logged-out user. The backend is the entitlement authority.
 class PhonePushController extends ChangeNotifier {
-  PhonePushController(
-      {required this.api,
-      required this.storage,
-      required this.platform,
-      required this.createTransport,
-      this.boundDeviceId});
+  PhonePushController({
+    required this.api,
+    required this.storage,
+    required this.platform,
+    required this.createTransport,
+    this.boundDeviceId,
+  });
   final ApiClient api;
   final SecureStorage storage;
   final String platform;
@@ -75,8 +76,11 @@ class PhonePushController extends ChangeNotifier {
       ),
     );
     void emit(
-        PhoneAlert alert, Set<String> seen, StreamController<PhoneAlert> stream,
-        {bool tap = false}) {
+      PhoneAlert alert,
+      Set<String> seen,
+      StreamController<PhoneAlert> stream, {
+      bool tap = false,
+    }) {
       final generation = _generation;
       unawaited(
         _run(
@@ -84,7 +88,9 @@ class PhonePushController extends ChangeNotifier {
             if (_disposed ||
                 generation != _generation ||
                 (!tap && (_user == null || !enabled)) ||
-                !seen.add(alert.eventId)) return;
+                !seen.add(alert.eventId)) {
+              return;
+            }
             if (seen.length > 100) seen.remove(seen.first);
             // Account-scoped bounded history survives restarts. Foreground and tap
             // receipts stay separate so viewing an alert is never suppressed.
@@ -97,19 +103,25 @@ class PhonePushController extends ChangeNotifier {
             if (ids.contains(alert.eventId)) return;
             ids.add(alert.eventId);
             await storage.write(
-                key,
-                jsonEncode(
-                    ids.length > 100 ? ids.sublist(ids.length - 100) : ids));
+              key,
+              jsonEncode(
+                ids.length > 100 ? ids.sublist(ids.length - 100) : ids,
+              ),
+            );
             if (!_disposed && generation == _generation) stream.add(alert);
           },
         ),
       );
     }
 
-    _subscriptions.add(transport.foreground
-        .listen((alert) => emit(alert, _seenForeground, _foreground)));
-    _subscriptions.add(transport.opened
-        .listen((alert) => emit(alert, _seenOpened, _opened, tap: true)));
+    _subscriptions.add(
+      transport.foreground
+          .listen((alert) => emit(alert, _seenForeground, _foreground)),
+    );
+    _subscriptions.add(
+      transport.opened
+          .listen((alert) => emit(alert, _seenOpened, _opened, tap: true)),
+    );
     final initial = await transport.initialAlert();
     if (initial != null) emit(initial, _seenOpened, _opened, tap: true);
     return transport;
@@ -202,9 +214,12 @@ class PhonePushController extends ChangeNotifier {
     await storage.write('push_pending_unregister', 'true');
     try {
       final installation = await storage.read('push_installation_id');
-      if (installation != null)
-        await api.postNoContent('/notifications/push/unregister',
-            body: {'installation_id': installation});
+      if (installation != null) {
+        await api.postNoContent(
+          '/notifications/push/unregister',
+          body: {'installation_id': installation},
+        );
+      }
     } finally {
       if (_transport != null) await _transport!.deleteToken();
     }

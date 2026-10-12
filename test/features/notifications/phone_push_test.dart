@@ -57,7 +57,8 @@ void main() {
   test('push routing only uses validated signal UUID, never payload routes',
       () {
     final alert = PhoneAlert.parse(
-        {...data, 'url': 'https://evil.example', 'strategy': 'private'})!;
+      {...data, 'url': 'https://evil.example', 'strategy': 'private'},
+    )!;
     expect(alert.signalPath, '/signals/${data['signal_id']}');
     expect(PhoneAlert.parse({...data, 'signal_id': '../ea'}), isNull);
     expect(PhoneAlert.parse({...data, 'type': 'private'}), isNull);
