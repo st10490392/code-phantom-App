@@ -8,6 +8,12 @@ name: Build Web Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      enkidu_shadow_view:
+        description: "Include owner-only ENKIDU V5 SHADOW view in this staging artifact"
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - codephantom-app-dev-qn0faw
@@ -67,6 +73,7 @@ jobs:
         run: >-
           flutter build web --release --no-web-resources-cdn
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENKIDU_SHADOW_VIEW_ENABLED=${{ github.event_name == 'workflow_dispatch' && inputs.enkidu_shadow_view || false }}
           --dart-define=API_BASE_URL=${{ env.API_BASE_URL }}
           --dart-define=PUSH_ENABLED=${{ vars.PUSH_WEB_ENABLED == 'true' }}
           --dart-define=PUSH_FIREBASE_PROJECT_ID=codephantom-technologies
