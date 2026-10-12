@@ -15,6 +15,11 @@ name: Android release
 on:
   workflow_dispatch:
     inputs:
+      release_candidate_r1:
+        description: "Build the private, pinned Android RC R1 (code 14; V5 disabled)"
+        required: false
+        type: boolean
+        default: false
       build_name:
         description: "Version name (e.g. 0.2.0). Empty = pubspec version."
         required: false
@@ -41,6 +46,13 @@ jobs:
     environment: ${{ github.event_name == 'push' && 'production' || 'staging' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate private RC request
+        if: inputs.release_candidate_r1
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          ENKIDU_REQUESTED: ${{ inputs.enkidu_shadow_view }}
+        run: python3 scripts/android_rc_r1.py preflight
 
       - name: Install validated Firebase Android configuration
         if: github.event_name == 'workflow_dispatch'
@@ -98,9 +110,12 @@ jobs:
           } > android/key.properties
 
       - run: flutter pub get
+      - run: flutter analyze
       - run: flutter test
+      - run: python3 -m unittest discover -s scripts -p 'test_android_rc_r1.py'
 
       - name: Build signed AAB + APK
+        if: ${{ !inputs.release_candidate_r1 }}
         env:
           API_BASE_URL: ${{ vars.API_BASE_URL }}
           BUILD_NAME: ${{ github.event_name == 'push' && github.ref_name || inputs.build_name }}
@@ -124,7 +139,15 @@ jobs:
           flutter build appbundle $common
           flutter build apk $common
 
+      - name: Build one private signed RC APK
+        if: inputs.release_candidate_r1
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          ENKIDU_REQUESTED: ${{ inputs.enkidu_shadow_view }}
+        run: python3 scripts/android_rc_r1.py build
+
       - name: Refuse unsigned or debug-signed output
+        if: ${{ !inputs.release_candidate_r1 }}
         run: |
           apk=build/app/outputs/flutter-apk/app-release.apk
           apksigner=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
@@ -149,11 +172,19 @@ jobs:
 
           sha256sum build/app/outputs/bundle/release/app-release.aab "$apk" | tee SHA256SUMS.txt
 
+      - name: Verify actual private RC APK
+        if: inputs.release_candidate_r1
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          ENKIDU_REQUESTED: ${{ inputs.enkidu_shadow_view }}
+        run: python3 scripts/android_rc_r1.py verify
+
       - name: Remove signing material
         if: always()
         run: rm -f android/key.properties android/app/upload-keystore.jks android/app/google-services.json
 
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release_candidate_r1 }}
         with:
           name: codephantom-android-${{ github.event_name == 'push' && 'production' || 'staging' }}-${{ github.run_number }}
           path: |
@@ -162,9 +193,19 @@ jobs:
             SHA256SUMS.txt
           retention-days: 30
 
+      - name: Retain verified private RC
+        if: inputs.release_candidate_r1
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodePhantom-Android-RC-R1-code14-${{ github.run_id }}
+          path: build/android-rc-r1/
+          if-no-files-found: error
+          retention-days: 30
+
       # Obfuscation symbols are needed to de-obfuscate crash stack traces.
       # Kept as a private workflow artifact - never attached to a public release.
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release_candidate_r1 }}
         with:
           name: debug-symbols-${{ github.run_number }}
           path: build/debug-info
