@@ -54,8 +54,10 @@ const data = {
 };
 
 void main() {
-  test('push routing only uses validated signal UUID, never payload routes', () {
-    final alert = PhoneAlert.parse({...data, 'url': 'https://evil.example', 'strategy': 'private'})!;
+  test('push routing only uses validated signal UUID, never payload routes',
+      () {
+    final alert = PhoneAlert.parse(
+        {...data, 'url': 'https://evil.example', 'strategy': 'private'})!;
     expect(alert.signalPath, '/signals/${data['signal_id']}');
     expect(PhoneAlert.parse({...data, 'signal_id': '../ea'}), isNull);
     expect(PhoneAlert.parse({...data, 'type': 'private'}), isNull);
@@ -74,31 +76,40 @@ void main() {
     deviceIds.clear();
     final tokens = TokenStorage(storage);
     await tokens.save(
-        accessToken: 'user-token',
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),);
+      accessToken: 'user-token',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
     final dio = Dio(BaseOptions(baseUrl: 'https://backend.example/api/v1'));
     dio.httpClientAdapter = FakeHttpClientAdapter((options) {
       requests.add(options);
       return offline
           ? const FakeResponse.networkFailure()
-          : const FakeResponse(statusCode: 200, body: {
-              'data': {'id': 'registered'},
-            },);
+          : const FakeResponse(
+              statusCode: 200,
+              body: {
+                'data': {'id': 'registered'},
+              },
+            );
     });
     controller = PhonePushController(
-        api: ApiClient(
-            baseUrl: dio.options.baseUrl, tokenStorage: tokens, dio: dio,),
-        storage: storage,
-        platform: 'ANDROID',
-        boundDeviceId: (userId) async => deviceIds[userId],
-        createTransport: () async => transport,);
+      api: ApiClient(
+        baseUrl: dio.options.baseUrl,
+        tokenStorage: tokens,
+        dio: dio,
+      ),
+      storage: storage,
+      platform: 'ANDROID',
+      boundDeviceId: (userId) async => deviceIds[userId],
+      createTransport: () async => transport,
+    );
   });
   tearDown(() async {
     controller.dispose();
     await transport.close();
   });
 
-  test('push uses the current account binding and ignores the legacy global id', () async {
+  test('push uses the current account binding and ignores the legacy global id',
+      () async {
     await storage.write('account_device_id', 'another-account-legacy-id');
     deviceIds['alice'] = '11111111-1111-4111-8111-111111111111';
     deviceIds['bob'] = '22222222-2222-4222-8222-222222222222';
@@ -125,10 +136,14 @@ void main() {
     final request = requests.single;
     expect(request.path, '/notifications/push/register');
     expect(request.headers['Authorization'], 'Bearer user-token');
-    expect((request.data as Map).keys.toSet(),
-        {'installation_id', 'token', 'platform'},);
-    expect(await storage.read('push_installation_id'),
-        matches(RegExp(r'^[a-f0-9-]{36}$')),);
+    expect(
+      (request.data as Map).keys.toSet(),
+      {'installation_id', 'token', 'platform'},
+    );
+    expect(
+      await storage.read('push_installation_id'),
+      matches(RegExp(r'^[a-f0-9-]{36}$')),
+    );
   });
 
   test('denied permission creates no backend token registration', () async {
@@ -140,7 +155,9 @@ void main() {
     expect(controller.error, contains('phone settings'));
   });
 
-  test('anonymous cold start retries pending SDK token deletion without registering', () async {
+  test(
+      'anonymous cold start retries pending SDK token deletion without registering',
+      () async {
     await storage.write('push_pending_unregister', 'true');
     await storage.write('push_enabled', 'false');
     await controller.setUser(null);
@@ -149,10 +166,13 @@ void main() {
     expect(controller.enabled, false);
   });
 
-  test('persisted foreground receipt suppresses restart duplicates but not taps', () async {
+  test(
+      'persisted foreground receipt suppresses restart duplicates but not taps',
+      () async {
     await storage.write('push_seen_user_foreground', '["${data['event_id']}"]');
     final foreground = <PhoneAlert>[], opened = <PhoneAlert>[];
-    final a = controller.foreground.listen(foreground.add), b = controller.opened.listen(opened.add);
+    final a = controller.foreground.listen(foreground.add),
+        b = controller.opened.listen(opened.add);
     await controller.setUser('user');
     await controller.enable();
     transport.messages.add(PhoneAlert.parse(data)!);
@@ -161,7 +181,8 @@ void main() {
     await controller.resume();
     expect(foreground, isEmpty);
     expect(opened.length, 1);
-    await a.cancel(); await b.cancel();
+    await a.cancel();
+    await b.cancel();
   });
 
   test(
@@ -274,12 +295,14 @@ void main() {
   test('unsupported/mock builds never initialize Firebase', () async {
     controller.dispose();
     controller = PhonePushController(
-        api: ApiClient(
-            baseUrl: 'https://backend.example',
-            tokenStorage: TokenStorage(storage),),
-        storage: storage,
-        platform: 'WEB',
-        createTransport: null,);
+      api: ApiClient(
+        baseUrl: 'https://backend.example',
+        tokenStorage: TokenStorage(storage),
+      ),
+      storage: storage,
+      platform: 'WEB',
+      createTransport: null,
+    );
     await controller.setUser('user');
     await controller.enable();
     expect(controller.available, false);

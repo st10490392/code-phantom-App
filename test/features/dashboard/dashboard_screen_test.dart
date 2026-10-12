@@ -19,7 +19,8 @@ const _ea = 'EA';
 
 void main() {
   for (final bound in [false, true]) {
-    testWidgets('licensed client dashboard preserves device gate: bound=$bound', (tester) async {
+    testWidgets('licensed client dashboard preserves device gate: bound=$bound',
+        (tester) async {
       const client = AuthUser(
         id: 'licensed-client',
         email: 'client@example.com',
@@ -30,13 +31,15 @@ void main() {
       await tester.pumpWidget(ProviderScope(
         overrides: [
           currentUserProvider.overrideWithValue(client),
-          boundDeviceIdProvider(client.id).overrideWith((ref) async => bound ? 'bound-device' : null),
+          boundDeviceIdProvider(client.id)
+              .overrideWith((ref) async => bound ? 'bound-device' : null),
         ],
         child: const MaterialApp(home: DashboardScreen()),
       ));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      expect(find.byType(ClientDeviceBindingRequiredView), bound ? findsNothing : findsOneWidget);
+      expect(find.byType(ClientDeviceBindingRequiredView),
+          bound ? findsNothing : findsOneWidget);
       expect(find.text(_scanner), bound ? findsOneWidget : findsNothing);
       expect(find.text('ENKIDU V5 SHADOW'), findsNothing);
     });
@@ -56,7 +59,8 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  testWidgets('OWNER sees every production module summary on the dashboard', (tester) async {
+  testWidgets('OWNER sees every production module summary on the dashboard',
+      (tester) async {
     const owner = AuthUser(
       id: 'u_owner',
       email: 'owner@codephantom.dev',
@@ -72,8 +76,7 @@ void main() {
     expect(find.text(_ea), findsOneWidget);
   });
 
-  testWidgets('an EA-only client sees only the EA summary',
-      (tester) async {
+  testWidgets('an EA-only client sees only the EA summary', (tester) async {
     const eaClient = AuthUser(
       id: 'u_ea',
       email: 'ea.client@codephantom.dev',
@@ -89,7 +92,8 @@ void main() {
     expect(find.text(_signals), findsNothing);
   });
 
-  testWidgets('a scanner-only client sees only the Scanner summary', (tester) async {
+  testWidgets('a scanner-only client sees only the Scanner summary',
+      (tester) async {
     const scannerClient = AuthUser(
       id: 'u_scanner',
       email: 'scanner.client@codephantom.dev',
@@ -105,7 +109,8 @@ void main() {
     expect(find.text(_ea), findsNothing);
   });
 
-  testWidgets('Notifications always renders regardless of module permissions', (tester) async {
+  testWidgets('Notifications always renders regardless of module permissions',
+      (tester) async {
     const scannerClient = AuthUser(
       id: 'u_scanner',
       email: 'scanner.client@codephantom.dev',

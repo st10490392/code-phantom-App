@@ -21,7 +21,10 @@ void main() {
   Map<String, dynamic> session(String access) => {
         'access_token': access,
         'refresh_token': 'refresh-$access',
-        'expires_at': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
+        'expires_at': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000,
         'expires_in': 3600,
       };
 
@@ -33,8 +36,10 @@ void main() {
       requests.add(o);
       return route(o);
     });
-    client = ApiClient(baseUrl: 'http://test.local/api/v1', tokenStorage: storage, dio: dio);
-    ApiAuthService(client, storage, authRedirectUrl: 'https://web.example/auth/callback');
+    client = ApiClient(
+        baseUrl: 'http://test.local/api/v1', tokenStorage: storage, dio: dio);
+    ApiAuthService(client, storage,
+        authRedirectUrl: 'https://web.example/auth/callback');
   });
 
   String? authOf(RequestOptions o) => o.headers['Authorization'] as String?;
@@ -57,7 +62,11 @@ void main() {
       dio: dio,
     );
 
-    for (final path in ['/scanner/setups', '/signals', '/enkidu-shadow/observations']) {
+    for (final path in [
+      '/scanner/setups',
+      '/signals',
+      '/enkidu-shadow/observations'
+    ]) {
       await boundClient.get(path);
       expect(requests.last.headers['Authorization'], 'Bearer active');
       expect(
@@ -71,7 +80,9 @@ void main() {
     expect(requests.last.headers.containsKey('X-CP-Device-Id'), isFalse);
   });
 
-  test('an access token about to expire is refreshed before the request is sent', () async {
+  test(
+      'an access token about to expire is refreshed before the request is sent',
+      () async {
     await storage.save(
       accessToken: 'old',
       refreshToken: 'refresh-old',
@@ -87,37 +98,69 @@ void main() {
     expect(await storage.readAccessToken(), 'new');
   });
 
-  test('a 401 during use refreshes once and retries with the new token', () async {
-    await storage.save(accessToken: 'revoked', refreshToken: 'refresh-revoked', expiresAt: DateTime.now().add(const Duration(hours: 1)));
+  test('a 401 during use refreshes once and retries with the new token',
+      () async {
+    await storage.save(
+        accessToken: 'revoked',
+        refreshToken: 'refresh-revoked',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)));
     route = (o) {
-      if (o.path == '/auth/refresh') return FakeResponse(statusCode: 200, body: {'data': session('fresh')});
+      if (o.path == '/auth/refresh')
+        return FakeResponse(statusCode: 200, body: {'data': session('fresh')});
       return authOf(o) == 'Bearer fresh'
           ? const FakeResponse(statusCode: 200, body: {'data': []})
-          : const FakeResponse(statusCode: 401, body: {'error': {'code': 'UNAUTHORIZED', 'message': 'Invalid or expired session.'}});
+          : const FakeResponse(statusCode: 401, body: {
+              'error': {
+                'code': 'UNAUTHORIZED',
+                'message': 'Invalid or expired session.'
+              }
+            });
     };
     await client.get('/scanner/setups');
-    expect(requests.map((r) => r.path), ['/scanner/setups', '/auth/refresh', '/scanner/setups']);
+    expect(requests.map((r) => r.path),
+        ['/scanner/setups', '/auth/refresh', '/scanner/setups']);
     expect(authOf(requests.last), 'Bearer fresh');
   });
 
   test('concurrent 401s share a single refresh', () async {
-    await storage.save(accessToken: 'revoked', refreshToken: 'r', expiresAt: DateTime.now().add(const Duration(hours: 1)));
+    await storage.save(
+        accessToken: 'revoked',
+        refreshToken: 'r',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)));
     route = (o) {
-      if (o.path == '/auth/refresh') return FakeResponse(statusCode: 200, body: {'data': session('fresh')});
+      if (o.path == '/auth/refresh')
+        return FakeResponse(statusCode: 200, body: {'data': session('fresh')});
       return authOf(o) == 'Bearer fresh'
           ? const FakeResponse(statusCode: 200, body: {'data': []})
-          : const FakeResponse(statusCode: 401, body: {'error': {'code': 'UNAUTHORIZED'}});
+          : const FakeResponse(statusCode: 401, body: {
+              'error': {'code': 'UNAUTHORIZED'}
+            });
     };
-    await Future.wait([client.get('/signals'), client.get('/scanner/setups'), client.get('/ea/accounts')]);
+    await Future.wait([
+      client.get('/signals'),
+      client.get('/scanner/setups'),
+      client.get('/ea/accounts')
+    ]);
     expect(requests.where((r) => r.path == '/auth/refresh'), hasLength(1));
   });
 
-  test('a rejected refresh token ends the session: storage cleared, expiry signalled, never "wrong password"', () async {
-    await storage.save(accessToken: 'revoked', refreshToken: 'dead', expiresAt: DateTime.now().add(const Duration(hours: 1)));
-    route = (o) => const FakeResponse(statusCode: 401, body: {'error': {'code': 'UNAUTHORIZED', 'message': 'Invalid email or password.'}});
+  test(
+      'a rejected refresh token ends the session: storage cleared, expiry signalled, never "wrong password"',
+      () async {
+    await storage.save(
+        accessToken: 'revoked',
+        refreshToken: 'dead',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)));
+    route = (o) => const FakeResponse(statusCode: 401, body: {
+          'error': {
+            'code': 'UNAUTHORIZED',
+            'message': 'Invalid email or password.'
+          }
+        });
     var expired = 0;
     final sub = client.sessionExpired.listen((_) => expired++);
-    await expectLater(client.get('/signals'), throwsA(isA<SessionExpiredException>()));
+    await expectLater(
+        client.get('/signals'), throwsA(isA<SessionExpiredException>()));
     await Future<void>.delayed(Duration.zero);
     expect(expired, 1);
     expect(await storage.readAccessToken(), isNull);
@@ -125,38 +168,63 @@ void main() {
     await sub.cancel();
   });
 
-  test('login, register and reset calls are never retried or refreshed', () async {
-    route = (o) => const FakeResponse(statusCode: 401, body: {'error': {'code': 'UNAUTHORIZED', 'message': 'Invalid email or password.'}});
+  test('login, register and reset calls are never retried or refreshed',
+      () async {
+    route = (o) => const FakeResponse(statusCode: 401, body: {
+          'error': {
+            'code': 'UNAUTHORIZED',
+            'message': 'Invalid email or password.'
+          }
+        });
     await expectLater(
-      client.post('/auth/login', requiresAuth: false, body: {'email': 'a@b.c', 'password': 'x'}),
+      client.post('/auth/login',
+          requiresAuth: false, body: {'email': 'a@b.c', 'password': 'x'}),
       throwsA(isA<AuthenticationException>()),
     );
     expect(requests, hasLength(1));
   });
 
-  test('the signed-in app returns to sign-in when the session expires mid-use', () async {
-    await storage.save(accessToken: 'a', refreshToken: 'r', expiresAt: DateTime.now().add(const Duration(hours: 1)));
+  test('the signed-in app returns to sign-in when the session expires mid-use',
+      () async {
+    await storage.save(
+        accessToken: 'a',
+        refreshToken: 'r',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)));
     route = (o) => switch (o.path) {
-          '/me' => const FakeResponse(statusCode: 200, body: {
-              'data': {
-                'profile': {'id': 'u1', 'email': 'owner@codephantom.dev', 'display_name': 'Owner', 'status': 'ACTIVE'},
-                'roles': ['OWNER'],
-                'permissions': ['scanner.view'],
+          '/me' => const FakeResponse(
+              statusCode: 200,
+              body: {
+                'data': {
+                  'profile': {
+                    'id': 'u1',
+                    'email': 'owner@codephantom.dev',
+                    'display_name': 'Owner',
+                    'status': 'ACTIVE'
+                  },
+                  'roles': ['OWNER'],
+                  'permissions': ['scanner.view'],
+                },
               },
-            },),
-          _ => const FakeResponse(statusCode: 401, body: {'error': {'code': 'UNAUTHORIZED'}}),
+            ),
+          _ => const FakeResponse(statusCode: 401, body: {
+              'error': {'code': 'UNAUTHORIZED'}
+            }),
         };
-    final container = ProviderContainer(overrides: [
-      appEnvironmentProvider.overrideWithValue(AppEnvironment.production),
-      apiClientProvider.overrideWithValue(client),
-      tokenStorageProvider.overrideWithValue(storage),
-    ],);
+    final container = ProviderContainer(
+      overrides: [
+        appEnvironmentProvider.overrideWithValue(AppEnvironment.production),
+        apiClientProvider.overrideWithValue(client),
+        tokenStorageProvider.overrideWithValue(storage),
+      ],
+    );
     addTearDown(container.dispose);
     container.read(authControllerProvider);
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    expect(container.read(authControllerProvider).status, AuthStatus.authenticated);
+    expect(container.read(authControllerProvider).status,
+        AuthStatus.authenticated);
 
-    await expectLater(client.get('/signals'), throwsA(isA<SessionExpiredException>()));
+    await expectLater(
+        client.get('/signals'), throwsA(isA<SessionExpiredException>()));
     await Future<void>.delayed(Duration.zero);
     final state = container.read(authControllerProvider);
     expect(state.status, AuthStatus.unauthenticated);
