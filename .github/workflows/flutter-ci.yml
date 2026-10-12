@@ -32,10 +32,61 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
       - run: flutter pub get
+      - name: Check ENKIDU bridge Dart formatting
+        run: |
+          dart format --output=write \
+            lib/core/routing/app_router.dart \
+            lib/core/routing/app_shell.dart \
+            lib/core/routing/nav_destination.dart \
+            lib/features/enkidu_shadow/enkidu_shadow_screen.dart \
+            lib/features/notifications/push/phone_push_controller.dart \
+            lib/features/notifications/push/phone_push_providers.dart \
+            test/core/network/api_client_session_test.dart \
+            test/core/routing/app_router_test.dart \
+            test/core/routing/nav_destination_test.dart \
+            test/features/dashboard/dashboard_screen_test.dart \
+            test/features/auth/backend_permission_mapping_test.dart \
+            test/features/notifications/phone_push_test.dart \
+            test/features/enkidu_shadow/enkidu_shadow_screen_test.dart
+          git diff --exit-code -- lib test
       - run: flutter analyze
       - run: flutter test
+      - run: python3 -m unittest discover -s scripts -p test_firebase_config.py
+      - run: node --test scripts/test_web_push.cjs
       # Debug build proves the Android project compiles; no secrets involved
       # and the app defaults to APP_ENV=mock (no backend).
       - run: flutter build apk --debug
       # Web target (mock mode, no backend) must keep compiling too.
       - run: flutter build web --release --no-web-resources-cdn
+
+      # Issue #15: reproducible staging artifacts, without deployment or signing secrets.
+      - name: Build verified staging DEMO artifacts
+        if: github.event_name == 'push'
+        env:
+          API_BASE_URL: https://code-phantom-backend-staging.up.railway.app/api/v1
+        run: scripts/build_demo_staging.sh
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: gilgamesh-demo-staging
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/web/
+            build/demo-evidence/
+          retention-days: 7
+
+
+  ios-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      # Compile the native notification delegate and entitlement integration.
+      # No Apple credentials, Firebase client config or deployment is used.
+      - run: flutter build ios --release --no-codesign

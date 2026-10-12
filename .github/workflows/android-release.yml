@@ -18,6 +18,11 @@ on:
       build_name:
         description: "Version name (e.g. 0.2.0). Empty = pubspec version."
         required: false
+      enkidu_shadow_view:
+        description: "Include owner-only ENKIDU V5 SHADOW view in this staging build"
+        required: false
+        type: boolean
+        default: false
   push:
     tags: ["v*.*.*"]
 
@@ -36,6 +41,12 @@ jobs:
     environment: ${{ github.event_name == 'push' && 'production' || 'staging' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install validated Firebase Android configuration
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          FIREBASE_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: python3 scripts/firebase_android_config.py
 
       - name: Check release configuration
         env:
@@ -101,12 +112,15 @@ jobs:
           # "production" for both, which made a staging build indistinguishable
           # from a real production one from the device alone.
           APP_ENV: ${{ github.event_name == 'push' && 'production' || 'staging' }}
+          PUSH_ENABLED: ${{ github.event_name == 'workflow_dispatch' }}
+          ENKIDU_SHADOW_VIEW_ENABLED: ${{ github.event_name == 'workflow_dispatch' && inputs.enkidu_shadow_view || false }}
         run: |
           name_arg=""
           if [ -n "$BUILD_NAME" ]; then name_arg="--build-name=${BUILD_NAME#v}"; fi
           common="--release --obfuscate --split-debug-info=build/debug-info \
             --build-number=${{ github.run_number }} $name_arg \
-            --dart-define=APP_ENV=$APP_ENV --dart-define=API_BASE_URL=$API_BASE_URL"
+            --dart-define=PUSH_ENABLED=$PUSH_ENABLED --dart-define=APP_ENV=$APP_ENV --dart-define=API_BASE_URL=$API_BASE_URL \
+            --dart-define=ENKIDU_SHADOW_VIEW_ENABLED=$ENKIDU_SHADOW_VIEW_ENABLED"
           flutter build appbundle $common
           flutter build apk $common
 
@@ -137,7 +151,7 @@ jobs:
 
       - name: Remove signing material
         if: always()
-        run: rm -f android/key.properties android/app/upload-keystore.jks
+        run: rm -f android/key.properties android/app/upload-keystore.jks android/app/google-services.json
 
       - uses: actions/upload-artifact@v4
         with:

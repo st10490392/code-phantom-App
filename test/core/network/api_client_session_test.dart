@@ -57,11 +57,14 @@ void main() {
       dio: dio,
     );
 
-    await boundClient.get('/scanner/setups');
-    expect(
-      requests.last.headers['X-CP-Device-Id'],
-      '11111111-1111-4111-8111-111111111111',
-    );
+    for (final path in ['/scanner/setups', '/signals', '/enkidu-shadow/observations']) {
+      await boundClient.get(path);
+      expect(requests.last.headers['Authorization'], 'Bearer active');
+      expect(
+        requests.last.headers['X-CP-Device-Id'],
+        '11111111-1111-4111-8111-111111111111',
+      );
+    }
 
     requests.clear();
     await boundClient.get('/public/plans', requiresAuth: false);

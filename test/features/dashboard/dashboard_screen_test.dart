@@ -7,6 +7,8 @@ import 'package:code_phantom_app/core/permissions/permission_set.dart';
 import 'package:code_phantom_app/features/auth/domain/auth_user.dart';
 import 'package:code_phantom_app/features/auth/presentation/auth_providers.dart';
 import 'package:code_phantom_app/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:code_phantom_app/features/licensing/presentation/licensing_providers.dart';
+import 'package:code_phantom_app/features/licensing/presentation/client_device_binding_required_view.dart';
 
 /// Section headings the dashboard renders per module — kept in one place so
 /// the test reads as "which of these headings show up", matching how
@@ -16,6 +18,30 @@ const _signals = 'Signals';
 const _ea = 'EA';
 
 void main() {
+  for (final bound in [false, true]) {
+    testWidgets('licensed client dashboard preserves device gate: bound=$bound', (tester) async {
+      const client = AuthUser(
+        id: 'licensed-client',
+        email: 'client@example.com',
+        displayName: 'Client',
+        role: AppRole.client,
+        permissions: PermissionSet({Permission.scannerAccess}),
+      );
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          currentUserProvider.overrideWithValue(client),
+          boundDeviceIdProvider(client.id).overrideWith((ref) async => bound ? 'bound-device' : null),
+        ],
+        child: const MaterialApp(home: DashboardScreen()),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(ClientDeviceBindingRequiredView), bound ? findsNothing : findsOneWidget);
+      expect(find.text(_scanner), bound ? findsOneWidget : findsNothing);
+      expect(find.text('ENKIDU V5 SHADOW'), findsNothing);
+    });
+  }
+
   Future<void> pumpDashboardAs(WidgetTester tester, AuthUser? user) async {
     await tester.pumpWidget(
       ProviderScope(

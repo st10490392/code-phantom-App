@@ -8,6 +8,12 @@ name: Build Web Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      enkidu_shadow_view:
+        description: "Include owner-only ENKIDU V5 SHADOW view in this staging artifact"
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - codephantom-app-dev-qn0faw
@@ -33,6 +39,7 @@ env:
 
 jobs:
   build:
+    environment: staging
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -47,6 +54,17 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: node --test scripts/test_web_push.cjs
+
+      - name: Generate optional Firebase Web worker
+        if: vars.PUSH_WEB_ENABLED == 'true'
+        env:
+          PUSH_FIREBASE_PROJECT_ID: codephantom-technologies
+          PUSH_FIREBASE_APP_ID: ${{ vars.PUSH_FIREBASE_WEB_APP_ID }}
+          PUSH_FIREBASE_API_KEY: ${{ vars.PUSH_FIREBASE_WEB_API_KEY }}
+          PUSH_FIREBASE_SENDER_ID: ${{ vars.PUSH_FIREBASE_SENDER_ID }}
+          PUSH_WEB_VAPID_KEY: ${{ vars.PUSH_WEB_VAPID_KEY }}
+        run: python3 scripts/firebase_web_config.py
 
       - name: Check public build configuration
         run: sh deploy/web/check_build_config.sh
@@ -55,7 +73,14 @@ jobs:
         run: >-
           flutter build web --release --no-web-resources-cdn
           --dart-define=APP_ENV=${{ env.APP_ENV }}
+          --dart-define=ENKIDU_SHADOW_VIEW_ENABLED=${{ github.event_name == 'workflow_dispatch' && inputs.enkidu_shadow_view || false }}
           --dart-define=API_BASE_URL=${{ env.API_BASE_URL }}
+          --dart-define=PUSH_ENABLED=${{ vars.PUSH_WEB_ENABLED == 'true' }}
+          --dart-define=PUSH_FIREBASE_PROJECT_ID=codephantom-technologies
+          --dart-define=PUSH_FIREBASE_APP_ID=${{ vars.PUSH_FIREBASE_WEB_APP_ID }}
+          --dart-define=PUSH_FIREBASE_API_KEY=${{ vars.PUSH_FIREBASE_WEB_API_KEY }}
+          --dart-define=PUSH_FIREBASE_SENDER_ID=${{ vars.PUSH_FIREBASE_SENDER_ID }}
+          --dart-define=PUSH_WEB_VAPID_KEY=${{ vars.PUSH_WEB_VAPID_KEY }}
 
       - name: No source maps in the published bundle
         run: |

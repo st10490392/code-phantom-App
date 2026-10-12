@@ -14,7 +14,10 @@ import 'signal_service.dart';
 /// and status changes are paused until backtests pass.
 /// Clients without signals.publish/manage only receive published signals.
 class ApiSignalService implements SignalService {
-  ApiSignalService(this._client, {this.pollInterval = const Duration(seconds: 30)});
+  ApiSignalService(
+    this._client, {
+    this.pollInterval = const Duration(seconds: 30),
+  });
 
   final ApiClient _client;
   final Duration pollInterval;
@@ -27,7 +30,10 @@ class ApiSignalService implements SignalService {
     if (status == SignalStatus.pending) return const [];
     final response = await _client.get(
       '/signals',
-      query: {'limit': _pageSize, if (status != null) 'status': status.wireValue},
+      query: {
+        'limit': _pageSize,
+        if (status != null) 'status': status.wireValue,
+      },
     );
     return (response['data'] as List<dynamic>)
         .map((row) => signalFromBackendJson(row as Map<String, dynamic>))
@@ -35,20 +41,32 @@ class ApiSignalService implements SignalService {
   }
 
   @override
-  Stream<List<Signal>> watchSignals({SignalStatus? status}) =>
-      pollingStream(() => _list(status), pollInterval: pollInterval, refresh: _changed.stream);
+  Stream<List<Signal>> watchSignals({SignalStatus? status}) => pollingStream(
+        () => _list(status),
+        pollInterval: pollInterval,
+        refresh: _changed.stream,
+      );
 
   /// Signal management (publish/status changes) is paused until the
   /// strategy backtests pass; nothing is sent to the backend.
   @override
   Future<Signal> updateStatus(String signalId, SignalStatus status) =>
-      Future.error(StateError('Signal management is paused until backtests pass.'));
+      Future.error(
+        StateError('Signal management is paused until backtests pass.'),
+      );
 
   @override
   Future<SignalPerformanceSummary> performanceSummary() async {
-    final closed = (await _list(null)).where((s) => s.status.isClosed).toList();
+    final closed = (await _list(null))
+        .where((s) => s.status.isClosed && s.status != SignalStatus.cancelled)
+        .toList();
     final resolved = closed
-        .where((s) => s.result == 'WIN' || s.result == 'LOSS' || s.result == 'BREAKEVEN')
+        .where(
+          (s) =>
+              s.result == 'WIN' ||
+              s.result == 'LOSS' ||
+              s.result == 'BREAKEVEN',
+        )
         .toList();
     final wins = resolved.where((s) => s.result == 'WIN').length;
     final losses = resolved.where((s) => s.result == 'LOSS').length;
@@ -59,18 +77,24 @@ class ApiSignalService implements SignalService {
         .toList();
     return SignalPerformanceSummary(
       totalSignals: resolved.length,
+      rObservationCount: rValues.length,
       wins: wins,
       losses: losses,
       // Ambiguous/PENDING outcomes and breakevens never get guessed into
       // either side of the win-rate denominator.
       winRatePercent: decided == 0 ? 0 : (wins / decided) * 100,
-      averageRMultiple: rValues.isEmpty ? 0 : rValues.reduce((a, b) => a + b) / rValues.length,
+      averageRMultiple: rValues.isEmpty
+          ? 0
+          : rValues.reduce((a, b) => a + b) / rValues.length,
     );
   }
 
   @override
-  Future<Signal> createFromSetup(ScannerSetup setup) =>
-      Future.error(StateError('Only the backend can create a signal from an approved setup.'));
+  Future<Signal> createFromSetup(ScannerSetup setup) => Future.error(
+        StateError(
+          'Only the backend can create a signal from an approved setup.',
+        ),
+      );
 }
 
 /// Decodes a `public.signals` row (`numeric` scalars arrive as strings).
@@ -79,16 +103,22 @@ Signal signalFromBackendJson(Map<String, dynamic> row) {
   return Signal(
     id: row['id'] as String,
     setupId: row['source_setup_id'] as String?,
+    timeframe: row['timeframe'] as String?,
     symbol: row['symbol'] as String,
     direction: SetupDirection.fromWire(row['direction'] as String),
     entry: parseWireDecimal(row['entry']),
     stopLoss: parseWireDecimal(row['stop_loss']),
-    takeProfits: (row['take_profits'] as List<dynamic>? ?? const []).map(parseWireDecimal).toList(growable: false),
+    takeProfits: (row['take_profits'] as List<dynamic>? ?? const [])
+        .map(parseWireDecimal)
+        .toList(growable: false),
     status: SignalStatus.fromWire(row['status'] as String),
     // Signals carry no session on the backend.
     session: TradingSession.unknown,
-    openedAt: DateTime.parse((row['published_at'] ?? row['created_at']) as String),
-    closedAt: row['closed_at'] == null ? null : DateTime.parse(row['closed_at'] as String),
+    openedAt:
+        DateTime.parse((row['published_at'] ?? row['created_at']) as String),
+    closedAt: row['closed_at'] == null
+        ? null
+        : DateTime.parse(row['closed_at'] as String),
     result: row['result'] as String?,
     rMultiple: rMultiple == null ? null : parseWireDecimal(rMultiple),
     notes: row['notes'] as String?,

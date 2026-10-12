@@ -8,6 +8,7 @@ import '../../../core/storage/secure_storage.dart';
 import '../../../core/storage/device_identity_store.dart';
 import '../../../core/storage/token_storage.dart';
 import '../../../core/utilities/startup_trace.dart';
+import '../../notifications/push/phone_push_providers.dart';
 import '../data/api_auth_service.dart';
 import '../data/auth_service.dart';
 import '../data/mock_auth_service.dart';
@@ -88,11 +89,12 @@ class AuthState {
 }
 
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._authService) : super(AuthState.initial) {
+  AuthController(this._authService, {this.beforeLogout}) : super(AuthState.initial) {
     _restore();
   }
 
   final AuthService _authService;
+  final Future<void> Function()? beforeLogout;
 
   Future<void> _restore() async {
     // Whole splash-to-first-screen gate, end to end — see
@@ -129,6 +131,7 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await beforeLogout?.call();
     await _authService.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
@@ -182,7 +185,9 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
-  final controller = AuthController(ref.watch(authServiceProvider));
+  final controller = AuthController(ref.watch(authServiceProvider),
+    beforeLogout: () => ref.read(phonePushControllerProvider).beforeLogout(),
+  );
   if (ref.watch(appEnvironmentProvider) != AppEnvironment.mock) {
     final sub = ref.watch(apiClientProvider).sessionExpired.listen((_) => controller.sessionExpired());
     ref.onDispose(sub.cancel);

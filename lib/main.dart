@@ -6,8 +6,15 @@ import 'app.dart';
 import 'core/config/api_config.dart';
 import 'core/platform/browser_location.dart';
 import 'features/auth/presentation/auth_callback_screen.dart';
+import 'features/notifications/push/firebase_push_transport.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (PhonePushConfig.configured && !kIsWeb) {
+    await initializePushFirebase();
+    FirebaseMessaging.onBackgroundMessage(firebasePushBackgroundHandler);
+  }
   Uri? pendingAuthCallback;
   if (kIsWeb) {
     // Real paths (/scanner/setup/42) instead of /#/…, so links and refresh
