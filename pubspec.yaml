@@ -4,7 +4,7 @@ description: >
   account registration, one-time licence activation, device binding, reviewed
   scanner setups and published signals.
 publish_to: "none"
-version: 1.0.1-rc1+14
+version: 1.0.1-rc2+15
 
 environment:
   sdk: ">=3.6.0 <4.0.0"

@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       release_candidate_r1:
-        description: "Build the private, pinned Android RC R1 (code 14; V5 disabled)"
+        description: "Build private CP-APP-022 staging RC (code 15; V5 disabled)"
         required: false
         type: boolean
         default: false
@@ -199,7 +199,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: CodePhantom-Android-RC-R1-code14-${{ github.run_id }}
+          name: CodePhantom-Android-CPAPP022-code15-${{ github.run_id }}
           path: build/android-rc-r1/
           if-no-files-found: error
           retention-days: 30

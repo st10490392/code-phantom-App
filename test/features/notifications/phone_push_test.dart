@@ -68,14 +68,19 @@ void main() {
   late PhonePushController controller;
   late List<RequestOptions> requests;
   var offline = false;
+  var responseStatus = 200;
+  Map<String, dynamic> responseBody = {};
+  late TokenStorage tokens;
   final deviceIds = <String, String>{};
   setUp(() async {
     storage = FakeSecureStorage();
     transport = FakePushTransport();
     requests = [];
     offline = false;
+    responseStatus = 200;
+    responseBody = {'data': {'id': '33333333-3333-4333-8333-333333333333'}};
     deviceIds.clear();
-    final tokens = TokenStorage(storage);
+    tokens = TokenStorage(storage);
     await tokens.save(
       accessToken: 'user-token',
       expiresAt: DateTime.now().add(const Duration(hours: 1)),
@@ -85,12 +90,7 @@ void main() {
       requests.add(options);
       return offline
           ? const FakeResponse.networkFailure()
-          : const FakeResponse(
-              statusCode: 200,
-              body: {
-                'data': {'id': 'registered'},
-              },
-            );
+          : FakeResponse(statusCode: responseStatus, body: responseBody);
     });
     controller = PhonePushController(
       api: ApiClient(
@@ -145,6 +145,62 @@ void main() {
       await storage.read('push_installation_id'),
       matches(RegExp(r'^[a-f0-9-]{36}$')),
     );
+  });
+
+  test('unlicensed OWNER submits no claimed role or invented licence binding', () async {
+    await controller.setUser('owner');
+    await controller.enable();
+    expect(controller.registered, isTrue);
+    expect((requests.single.data as Map).keys.toSet(), {'installation_id', 'token', 'platform'});
+    expect(requests.single.headers['Authorization'], 'Bearer user-token');
+  });
+
+  test('licensed CLIENT retains the current account device binding', () async {
+    deviceIds['client'] = '11111111-1111-4111-8111-111111111111';
+    await controller.setUser('client');
+    await controller.enable();
+    expect(controller.registered, isTrue);
+    expect((requests.single.data as Map)['device_id'], deviceIds['client']);
+  });
+
+  test('missing authentication never sends a registration request', () async {
+    await tokens.clear();
+    await controller.setUser('owner');
+    await controller.enable();
+    expect(requests, isEmpty);
+    expect(controller.registered, isFalse);
+    expect(controller.error, contains('Sign in again'));
+  });
+
+  test('invalid stored device identity fails before HTTP', () async {
+    deviceIds['client'] = 'invalid-device';
+    await controller.setUser('client');
+    await controller.enable();
+    expect(requests, isEmpty);
+    expect(controller.registered, isFalse);
+    expect(controller.error, isNotNull);
+  });
+
+  test('backend device denial remains denied and has a sanitized message', () async {
+    responseStatus = 403;
+    responseBody = {'error': {'code': 'DEVICE_REQUIRED', 'message': 'fixture-sensitive-details'}};
+    await controller.setUser('owner');
+    await controller.enable();
+    expect(controller.registered, isFalse);
+    expect(controller.error, contains('not authorized'));
+    expect(controller.error, isNot(contains('fixture-sensitive-details')));
+    responseStatus = 200;
+    responseBody = {'data': {'id': '33333333-3333-4333-8333-333333333333'}};
+    await controller.resume();
+    expect(controller.registered, isTrue);
+  });
+
+  test('malformed successful response never claims registration', () async {
+    responseBody = {'data': {}};
+    await controller.setUser('owner');
+    await controller.enable();
+    expect(controller.registered, isFalse);
+    expect(controller.error, isNotNull);
   });
 
   test('denied permission creates no backend token registration', () async {
