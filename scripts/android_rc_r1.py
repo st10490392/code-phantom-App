@@ -115,7 +115,7 @@ def verify():
     report = parse_badging(badging)
     expected = identity(os.environ)
     verify_embedded(apk, expected)
-    resources = run_public_tool([str(signer.parent / 'aapt'), 'dump', 'resources', str(apk)])
+    resources = run_public_tool([str(signer.parent / 'aapt'), 'dump', '--values', 'resources', str(apk)])
     require('codephantom-technologies' in resources and 'google_app_id' in resources,
             'Expected native Firebase resources missing.')
     checksum = hashlib.sha256(apk.read_bytes()).hexdigest()
