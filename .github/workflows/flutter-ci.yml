@@ -34,6 +34,8 @@ jobs:
       - run: flutter pub get
       - name: Check ENKIDU bridge Dart formatting
         run: |
+          # Require committed analyzer fixes as well as formatter output.
+          dart fix --apply
           dart format --output=write \
             lib/core/routing/app_router.dart \
             lib/core/routing/app_shell.dart \
