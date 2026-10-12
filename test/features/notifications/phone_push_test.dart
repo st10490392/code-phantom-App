@@ -211,7 +211,7 @@ void main() {
   test(
       'refresh rotates the token with the same installation and optional verified device reference',
       () async {
-    await storage.write('account_device_id', 'device-id');
+    deviceIds['user'] = '11111111-1111-4111-8111-111111111111';
     await controller.setUser('user');
     await controller.enable();
     final installation = (requests.single.data as Map)['installation_id'];
@@ -222,7 +222,7 @@ void main() {
         .where((r) => (r.data as Map)['token'] == 'new-phone-token-123456')
         .single;
     expect((rotated.data as Map)['installation_id'], installation);
-    expect((rotated.data as Map)['device_id'], 'device-id');
+    expect((rotated.data as Map)['device_id'], deviceIds['user']);
   });
 
   test(

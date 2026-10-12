@@ -89,7 +89,7 @@ void main() {
       final paths = visibleNavDestinationsFor(admin).map((d) => d.path).toSet();
       expect(paths.contains('/scanner'), isTrue);
       expect(paths.contains('/signals'), isTrue);
-      expect(paths.contains('/ea'), isTrue);
+      expect(paths.contains('/ea'), isFalse);
       expect(paths.contains('/clients'), isFalse);
       expect(paths.contains('/licences'), isTrue);
     });
