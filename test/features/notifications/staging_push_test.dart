@@ -39,6 +39,11 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'https://fixture.example/api/v1'));
     dio.httpClientAdapter = FakeHttpClientAdapter((request) {
       requests.add(request);
+      if (request.method == 'GET' && request.path.endsWith('/notifications/push/staging-test/readiness')) {
+        return offline ? const FakeResponse.networkFailure() : FakeResponse(statusCode: status, body: {
+          'data': {'ready': status == 200, 'environment': 'staging', 'eligible_registration_count': 1},
+        });
+      }
       return offline
           ? const FakeResponse.networkFailure()
           : FakeResponse(
@@ -61,10 +66,20 @@ void main() {
       ownerId: () => owner,
     );
     await controller.load();
+    await controller.checkReadiness();
+    requests.clear();
   });
   tearDown(() {
     controller.dispose();
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  test('failed readiness prevents sending', () async {
+    status = 404;
+    await controller.checkReadiness();
+    expect(controller.ready, false);
+    await controller.send(confirmed: true);
+    expect(requests.where((r) => r.method == 'POST'), isEmpty);
   });
 
   test('only staging OWNER Android can see the action', () {
