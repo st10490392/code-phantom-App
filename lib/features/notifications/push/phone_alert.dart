@@ -30,7 +30,10 @@ class PhoneAlert {
         uuid.hasMatch(event) &&
         signal == null) {
       return PhoneAlert(
-          eventId: event, signalId: '', type: 'STAGING_PUSH_TEST');
+        eventId: event,
+        signalId: '',
+        type: 'STAGING_PUSH_TEST',
+      );
     }
     if (event is! String ||
         signal is! String ||

@@ -78,8 +78,13 @@ class ApiClient {
     bool requiresAuth = true,
     Map<String, dynamic>? body,
   }) async {
-    await _request('POST', path,
-        requiresAuth: requiresAuth, body: body, expectNoContent: true);
+    await _request(
+      'POST',
+      path,
+      requiresAuth: requiresAuth,
+      body: body,
+      expectNoContent: true,
+    );
   }
 
   /// Explicit one-shot operation: refresh may precede sending, never replay it.
@@ -119,7 +124,8 @@ class ApiClient {
     final base = Uri.parse(_dio.options.baseUrl);
     if (base.host.isEmpty) {
       throw const NetworkException(
-          'No backend configured for this build (mock mode).');
+        'No backend configured for this build (mock mode).',
+      );
     }
     final healthUri = base.replace(path: '/health');
     try {

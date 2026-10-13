@@ -32,8 +32,9 @@ void main() {
     offline = false;
     requests = [];
     await tokens.save(
-        accessToken: 'fixture-session',
-        expiresAt: DateTime.now().add(const Duration(hours: 1)));
+      accessToken: 'fixture-session',
+      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+    );
     await tokens.saveActiveUserId(owner!);
     final dio = Dio(BaseOptions(baseUrl: 'https://fixture.example/api/v1'));
     dio.httpClientAdapter = FakeHttpClientAdapter((request) {
@@ -46,7 +47,7 @@ void main() {
                 'data': {
                   'invocation_id': (request.data as Map)['invocation_id'],
                   'provider_result': 'ACCEPTED',
-                  'delivery_confirmed': false
+                  'delivery_confirmed': false,
                 },
                 'error': {'message': 'secret-provider-token'},
               },
@@ -55,7 +56,10 @@ void main() {
     api =
         ApiClient(baseUrl: dio.options.baseUrl, tokenStorage: tokens, dio: dio);
     controller = StagingPushTestController(
-        api: api, storage: storage, ownerId: () => owner);
+      api: api,
+      storage: storage,
+      ownerId: () => owner,
+    );
     await controller.load();
   });
   tearDown(() {
@@ -65,8 +69,10 @@ void main() {
 
   test('only staging OWNER Android can see the action', () {
     for (final environment in AppEnvironment.values) {
-      expect(stagingTestVisible(environment, true, true),
-          environment == AppEnvironment.staging);
+      expect(
+        stagingTestVisible(environment, true, true),
+        environment == AppEnvironment.staging,
+      );
     }
     expect(stagingTestVisible(AppEnvironment.staging, false, true), false);
     expect(stagingTestVisible(AppEnvironment.staging, true, false), false);
@@ -77,7 +83,8 @@ void main() {
     await controller.send(confirmed: false);
     expect(requests, isEmpty);
     await Future.wait(
-        [controller.send(confirmed: true), controller.send(confirmed: true)]);
+      [controller.send(confirmed: true), controller.send(confirmed: true)],
+    );
     expect(requests, hasLength(1));
     expect(requests.single.headers['Authorization'], 'Bearer fixture-session');
     expect(requests.single.path, '/notifications/push/staging-test');
@@ -85,9 +92,13 @@ void main() {
     expect(body.keys.toSet(), {'invocation_id', 'confirmation'});
     expect(body['confirmation'], 'SEND_ONE_STAGING_TEST');
     expect(
-        body['invocation_id'],
-        matches(RegExp(
-            r'^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')));
+      body['invocation_id'],
+      matches(
+        RegExp(
+          r'^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$',
+        ),
+      ),
+    );
     expect(controller.message, contains('delivery is not yet confirmed'));
   });
   test('uncertain network result stays consumed across controller recreation',
@@ -97,7 +108,10 @@ void main() {
     expect(controller.message, contains('may have been sent'));
     controller.dispose();
     controller = StagingPushTestController(
-        api: api, storage: storage, ownerId: () => owner);
+      api: api,
+      storage: storage,
+      ownerId: () => owner,
+    );
     await controller.load();
     await controller.send(confirmed: true);
     expect(controller.consumed, true);
@@ -143,7 +157,7 @@ void main() {
     final receipt = PhoneAlert.parse({
       'event_id': '12345678-1234-4234-8234-123456789012',
       'type': 'STAGING_PUSH_TEST',
-      'title': 'secret-provider-token'
+      'title': 'secret-provider-token',
     });
     expect(receipt!.isStagingTest, true);
     expect(receipt.signalPath, '/settings');
@@ -154,11 +168,12 @@ void main() {
       (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     const user = AuthUser(
-        id: 'owner-id',
-        email: 'fixture@example.test',
-        displayName: 'Owner',
-        role: AppRole.owner,
-        permissions: PermissionSet.owner);
+      id: 'owner-id',
+      email: 'fixture@example.test',
+      displayName: 'Owner',
+      role: AppRole.owner,
+      permissions: PermissionSet.owner,
+    );
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -181,10 +196,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(requests, hasLength(1));
     expect(
-        tester
-            .widget<TextButton>(
-                find.widgetWithText(TextButton, 'Send Test Notification'))
-            .onPressed,
-        isNull);
+      tester
+          .widget<TextButton>(
+            find.widgetWithText(TextButton, 'Send Test Notification'),
+          )
+          .onPressed,
+      isNull,
+    );
   });
 }

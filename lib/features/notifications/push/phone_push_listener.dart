@@ -30,8 +30,11 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener>
     ref.listenManual(
       authControllerProvider,
       (_, auth) {
-        unawaited(_push.setUser(
-            auth.status == AuthStatus.authenticated ? auth.user?.id : null));
+        unawaited(
+          _push.setUser(
+            auth.status == AuthStatus.authenticated ? auth.user?.id : null,
+          ),
+        );
       },
       fireImmediately: true,
     );
@@ -60,9 +63,10 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener>
             SnackBar(
               content: Text(alert.title),
               action: SnackBarAction(
-                  label: 'View',
-                  onPressed: () =>
-                      ref.read(appRouterProvider).go(alert.signalPath)),
+                label: 'View',
+                onPressed: () =>
+                    ref.read(appRouterProvider).go(alert.signalPath),
+              ),
             ),
           );
         },
@@ -132,8 +136,9 @@ class PhonePushSettings extends ConsumerWidget {
           ),
           if (push.error != null && push.enabled)
             TextButton(
-                onPressed: push.busy ? null : () => unawaited(push.resume()),
-                child: const Text('Retry')),
+              onPressed: push.busy ? null : () => unawaited(push.resume()),
+              child: const Text('Retry'),
+            ),
           const StagingPushTestAction(),
         ],
       ),

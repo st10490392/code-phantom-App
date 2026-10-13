@@ -62,8 +62,9 @@ class StagingPushTestController extends ChangeNotifier {
       if (_disposed || generation != _generation) return;
       consumed = prior != null;
       ready = id != null;
-      if (consumed)
+      if (consumed) {
         message = 'Test already submitted. Check your phone; do not resend.';
+      }
     } catch (_) {
       consumed = true;
       message = 'Test unavailable. No notification was requested.';
@@ -177,21 +178,25 @@ class _TestButtonState extends State<_TestButton> {
                         builder: (context) => AlertDialog(
                           title: const Text('Send one staging test?'),
                           content: const Text(
-                              'Send one notification to your registered Android phone. This action stays disabled after submission, even if the result is uncertain. No trade is created.'),
+                            'Send one notification to your registered Android phone. This action stays disabled after submission, even if the result is uncertain. No trade is created.',
+                          ),
                           actions: [
                             TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancel')),
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
                             TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Send once')),
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Send once'),
+                            ),
                           ],
                         ),
                       );
                       if (!mounted) return;
-                      if (owner == widget.ownerId)
+                      if (owner == widget.ownerId) {
                         await widget.controller
                             .send(confirmed: confirmed == true);
+                      }
                       if (mounted) setState(() => confirming = false);
                     },
               child: const Text('Send Test Notification'),
