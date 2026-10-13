@@ -51,7 +51,8 @@ class ApiClient {
   /// access token (single-flight) or throws [SessionExpiredException].
   Future<String> Function()? sessionRefresher;
 
-  final StreamController<void> _sessionExpired = StreamController<void>.broadcast();
+  final StreamController<void> _sessionExpired =
+      StreamController<void>.broadcast();
 
   /// Fires when an authenticated request finds the session unrecoverable
   /// (refresh token rejected). The stored session has already been cleared;
@@ -77,8 +78,29 @@ class ApiClient {
     bool requiresAuth = true,
     Map<String, dynamic>? body,
   }) async {
-    await _request('POST', path, requiresAuth: requiresAuth, body: body, expectNoContent: true);
+    await _request(
+      'POST',
+      path,
+      requiresAuth: requiresAuth,
+      body: body,
+      expectNoContent: true,
+    );
   }
+
+  /// Explicit one-shot operation: refresh may precede sending, never replay it.
+  Future<Map<String, dynamic>> postOnce(
+    String path, {
+    required String expectedUserId,
+    required Map<String, dynamic> body,
+  }) =>
+      _request(
+        'POST',
+        path,
+        requiresAuth: true,
+        body: body,
+        retryAuthentication: false,
+        expectedUserId: expectedUserId,
+      );
 
   Future<Map<String, dynamic>> patch(
     String path, {
@@ -101,7 +123,9 @@ class ApiClient {
   Future<Map<String, dynamic>> checkHealth() async {
     final base = Uri.parse(_dio.options.baseUrl);
     if (base.host.isEmpty) {
-      throw const NetworkException('No backend configured for this build (mock mode).');
+      throw const NetworkException(
+        'No backend configured for this build (mock mode).',
+      );
     }
     final healthUri = base.replace(path: '/health');
     try {
@@ -121,13 +145,18 @@ class ApiClient {
     Map<String, dynamic>? query,
     Map<String, dynamic>? body,
     bool expectNoContent = false,
+    bool retryAuthentication = true,
+    String? expectedUserId,
   }) async {
     Future<Map<String, dynamic>> send(String? token) async {
       try {
-        final deviceId =
-            token != null && _deviceIdProvider != null
-                ? await _deviceIdProvider()
-                : null;
+        final deviceId = token != null && _deviceIdProvider != null
+            ? await _deviceIdProvider()
+            : null;
+        if (expectedUserId != null &&
+            await _tokenStorage.readActiveUserId() != expectedUserId) {
+          throw const SessionExpiredException();
+        }
         final response = await _dio.request<dynamic>(
           path,
           data: body,
@@ -156,6 +185,7 @@ class ApiClient {
     try {
       return await send(token);
     } on AuthenticationException {
+      if (!retryAuthentication) throw const SessionExpiredException();
       // 401 on a call made with a session: the access token was rejected
       // (expired early, revoked, rotated). Refresh once and retry; this is
       // never "wrong email or password".
@@ -175,7 +205,8 @@ class ApiClient {
     if (token == null) throw const SessionExpiredException();
     if (sessionRefresher == null) return token;
     final expiresAt = await _tokenStorage.readExpiresAt();
-    if (expiresAt != null && expiresAt.isBefore(DateTime.now().add(_refreshMargin))) {
+    if (expiresAt != null &&
+        expiresAt.isBefore(DateTime.now().add(_refreshMargin))) {
       return _refreshOrExpire();
     }
     return token;

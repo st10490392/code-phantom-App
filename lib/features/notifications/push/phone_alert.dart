@@ -8,9 +8,11 @@ class PhoneAlert {
   final String eventId;
   final String signalId;
   final String type;
-  String get signalPath => '/signals/$signalId';
+  bool get isStagingTest => type == 'STAGING_PUSH_TEST';
+  String get signalPath => isStagingTest ? '/settings' : '/signals/$signalId';
 
   String get title => switch (type) {
+        'STAGING_PUSH_TEST' => 'Staging test notification received.',
         'TP' => 'CPT Market Update · TP reached',
         'CANCELLED' => 'CPT Market Update · Cancelled',
         'SL' => 'CPT Market Update · SL reached',
@@ -23,6 +25,16 @@ class PhoneAlert {
     final type = data['type'];
     final uuid =
         RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$');
+    if (type == 'STAGING_PUSH_TEST' &&
+        event is String &&
+        uuid.hasMatch(event) &&
+        signal == null) {
+      return PhoneAlert(
+        eventId: event,
+        signalId: '',
+        type: 'STAGING_PUSH_TEST',
+      );
+    }
     if (event is! String ||
         signal is! String ||
         !uuid.hasMatch(event) ||
