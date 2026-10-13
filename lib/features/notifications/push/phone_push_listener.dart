@@ -17,7 +17,8 @@ class PhonePushListener extends ConsumerStatefulWidget {
   ConsumerState<PhonePushListener> createState() => _PhonePushListenerState();
 }
 
-class _PhonePushListenerState extends ConsumerState<PhonePushListener> with WidgetsBindingObserver {
+class _PhonePushListenerState extends ConsumerState<PhonePushListener>
+    with WidgetsBindingObserver {
   late final PhonePushController _push;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
@@ -29,7 +30,8 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
     ref.listenManual(
       authControllerProvider,
       (_, auth) {
-        unawaited(_push.setUser(auth.status == AuthStatus.authenticated ? auth.user?.id : null));
+        unawaited(_push.setUser(
+            auth.status == AuthStatus.authenticated ? auth.user?.id : null));
       },
       fireImmediately: true,
     );
@@ -38,9 +40,11 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
         (alert) {
           if (!mounted || ref.read(currentUserProvider) == null) return;
           if (alert.isStagingTest) {
-            if (stagingTestVisible(ref.read(appEnvironmentProvider),
-                ref.read(currentUserProvider)?.isOwner == true,
-                !kIsWeb && defaultTargetPlatform == TargetPlatform.android)) {
+            if (stagingTestVisible(
+              ref.read(appEnvironmentProvider),
+              ref.read(currentUserProvider)?.isOwner == true,
+              !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
+            )) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(alert.title)),
               );
@@ -55,7 +59,10 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(alert.title),
-              action: SnackBarAction(label: 'View', onPressed: () => ref.read(appRouterProvider).go(alert.signalPath)),
+              action: SnackBarAction(
+                  label: 'View',
+                  onPressed: () =>
+                      ref.read(appRouterProvider).go(alert.signalPath)),
             ),
           );
         },
@@ -66,9 +73,11 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
         (alert) {
           if (!mounted) return;
           if (alert.isStagingTest) {
-            if (stagingTestVisible(ref.read(appEnvironmentProvider),
-                ref.read(currentUserProvider)?.isOwner == true,
-                !kIsWeb && defaultTargetPlatform == TargetPlatform.android)) {
+            if (stagingTestVisible(
+              ref.read(appEnvironmentProvider),
+              ref.read(currentUserProvider)?.isOwner == true,
+              !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
+            )) {
               ref.read(appRouterProvider).go('/settings');
             }
             return;
@@ -88,7 +97,9 @@ class _PhonePushListenerState extends ConsumerState<PhonePushListener> with Widg
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    for (final sub in _subscriptions) { unawaited(sub.cancel()); }
+    for (final sub in _subscriptions) {
+      unawaited(sub.cancel());
+    }
     super.dispose();
   }
 
@@ -115,10 +126,14 @@ class PhonePushSettings extends ConsumerWidget {
                       : 'New signals and take-profit or stop-loss results.'),
             ),
             value: push.enabled,
-            onChanged: push.busy ? null : (value) => unawaited(value ? push.enable() : push.disable()),
+            onChanged: push.busy
+                ? null
+                : (value) => unawaited(value ? push.enable() : push.disable()),
           ),
           if (push.error != null && push.enabled)
-            TextButton(onPressed: push.busy ? null : () => unawaited(push.resume()), child: const Text('Retry')),
+            TextButton(
+                onPressed: push.busy ? null : () => unawaited(push.resume()),
+                child: const Text('Retry')),
           const StagingPushTestAction(),
         ],
       ),

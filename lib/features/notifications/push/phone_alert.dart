@@ -25,9 +25,12 @@ class PhoneAlert {
     final type = data['type'];
     final uuid =
         RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$');
-    if (type == 'STAGING_PUSH_TEST' && event is String &&
-        uuid.hasMatch(event) && signal == null) {
-      return PhoneAlert(eventId: event, signalId: '', type: 'STAGING_PUSH_TEST');
+    if (type == 'STAGING_PUSH_TEST' &&
+        event is String &&
+        uuid.hasMatch(event) &&
+        signal == null) {
+      return PhoneAlert(
+          eventId: event, signalId: '', type: 'STAGING_PUSH_TEST');
     }
     if (event is! String ||
         signal is! String ||
