@@ -203,5 +203,6 @@ void main() {
           .onPressed,
       isNull,
     );
+    debugDefaultTargetPlatformOverride = null;
   });
 }
