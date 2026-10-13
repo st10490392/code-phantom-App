@@ -31,7 +31,8 @@ final stagingPushTestProvider = Provider<StagingPushTestController>((ref) {
   return controller;
 });
 
-/// One persisted invocation per owner for this release candidate. No reset UI.
+/// RC17 recovery slot: a distinct one-shot invocation, never a reset of RC16.
+/// Requires backend preflight before exposing the send action.
 class StagingPushTestController extends ChangeNotifier {
   StagingPushTestController({
     required this.api,
@@ -42,12 +43,13 @@ class StagingPushTestController extends ChangeNotifier {
   final SecureStorage storage;
   final String? Function() ownerId;
   bool ready = false;
+  bool checking = false;
   bool consumed = false;
   String? message;
   String? _owner;
   bool _disposed = false;
   int _generation = 0;
-  String _key(String id) => 'staging_push_test_rc16_$id';
+  String _key(String id) => 'staging_push_test_rc17_$id';
 
   Future<void> load() async {
     final id = ownerId();
@@ -61,15 +63,48 @@ class StagingPushTestController extends ChangeNotifier {
       final prior = id == null ? null : await storage.read(_key(id));
       if (_disposed || generation != _generation) return;
       consumed = prior != null;
-      ready = id != null;
+      ready = false; // Fail closed until the server explicitly reports readiness.
       if (consumed) {
-        message = 'Test already submitted. Check your phone; do not resend.';
+        message = 'Recovery test already submitted. Do not resend.';
+      } else if (id != null) {
+        message = 'Check staging readiness before sending.';
       }
     } catch (_) {
       consumed = true;
       message = 'Test unavailable. No notification was requested.';
     }
     if (!_disposed) notifyListeners();
+  }
+
+  /// Read-only backend authority. Missing/malformed readiness never enables send.
+  Future<void> checkReadiness() async {
+    final id = ownerId();
+    if (id == null || id != _owner || consumed || checking) return;
+    final generation = _generation;
+    checking = true;
+    ready = false;
+    message = 'Checking staging readiness…';
+    notifyListeners();
+    try {
+      final response = await api.get('/notifications/push/staging-test/readiness');
+      if (_disposed || generation != _generation || ownerId() != id) return;
+      final data = response['data'];
+      ready = data is Map &&
+          data['ready'] == true &&
+          data['environment'] == 'staging' &&
+          data['eligible_registration_count'] == 1;
+      message = ready
+          ? 'Staging ready. One authorized recovery attempt is available.'
+          : 'Staging is not ready. No notification was requested.';
+    } catch (_) {
+      if (!_disposed && generation == _generation && ownerId() == id) {
+        ready = false;
+        message = 'Staging readiness unavailable. No notification was requested.';
+      }
+    } finally {
+      checking = false;
+      if (!_disposed) notifyListeners();
+    }
   }
 
   Future<void> send({required bool confirmed}) async {
@@ -165,6 +200,12 @@ class _TestButtonState extends State<_TestButton> {
         animation: widget.controller,
         builder: (context, _) => Column(
           children: [
+            TextButton(
+              onPressed: widget.controller.consumed || widget.controller.checking
+                  ? null
+                  : widget.controller.checkReadiness,
+              child: const Text('Check Test Readiness'),
+            ),
             TextButton(
               onPressed: !widget.controller.ready ||
                       widget.controller.consumed ||
