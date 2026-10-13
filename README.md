@@ -183,3 +183,9 @@ flutter build appbundle --release
   convenience, not authorization. A real backend must always be the final
   authority — this is stated directly in code comments so it isn't
   mistakenly relied upon later.
+
+---
+
+## Project status update — 13 October 2026
+
+Android RC15 (`1.0.1-rc2`, code 15) signed privately, [draft PR #22](https://github.com/st10490392/code-phantom-App/pull/22), 272 Flutter tests reported passing. Staging OWNER login and persistent phone-alert setting verified; one active Android push registration exists. **Real FCM delivery not yet verified.** A later staging test-button build was started, but final signing not confirmed. This default-branch README documents an early baseline, not all later draft-branch features.
