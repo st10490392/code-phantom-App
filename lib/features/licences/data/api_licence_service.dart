@@ -5,15 +5,10 @@ import '../domain/licence.dart';
 import '../domain/licence_enums.dart';
 import 'licence_service.dart';
 
-/// [LicenceService] backed by the CodePhantom backend.
+/// [LicenceService] backed by the CodePhantom backend (`/api/v1/licences`).
 ///
-/// - `watchLicences()` polls `/me/licences`.
-/// - `generate()` calls the admin endpoint `/admin/platform/licences/keys`.
-/// - `revoke/renew/suspend` call the respective admin endpoints.
-///
-/// These endpoints require `licences.manage` permission. The OWNER role
-/// has it by default; the backend enforces it regardless of what the
-/// client sends.
+/// All endpoints require authentication. Generate/revoke/renew/suspend
+/// additionally require `licences.manage` — the OWNER role has it.
 class ApiLicenceService implements LicenceService {
   ApiLicenceService(this._client, {this.pollInterval = const Duration(seconds: 30)});
 
@@ -21,10 +16,8 @@ class ApiLicenceService implements LicenceService {
   final Duration pollInterval;
   final StreamController<void> _changed = StreamController<void>.broadcast();
 
-  static const _base = '/me/licences';
-
   Future<List<Licence>> _fetchAll() async {
-    final response = await _client.get(_base);
+    final response = await _client.get('/licences');
     final List<dynamic> raw = response['data'] as List<dynamic>? ?? [];
     return raw.map((item) => Licence.fromBackendJson(item as Map<String, dynamic>)).toList();
   }
@@ -51,22 +44,26 @@ class ApiLicenceService implements LicenceService {
     };
 
     final response = await _client.post(
-      '/admin/platform/licences/keys',
+      '/licences',
       body: {
-        'plan_code': planCode,
-        'count': 1,
+        'user_id': userId,
+        'service': planCode,
         'device_limit': maxDevices,
-        'source': 'ADMIN',
+        'expires_at': duration.asDuration != null
+            ? DateTime.now().add(duration.asDuration!).toIso8601String()
+            : null,
       },
     );
 
-    final List<dynamic> keys = response['data'] as List<dynamic>? ?? [];
-    if (keys.isEmpty) throw const AppException('No licence key returned');
+    final data = response['data'] as Map<String, dynamic>? ?? {};
+    final licenceRaw = data['licence'] as Map<String, dynamic>? ?? response;
+    final plaintextKey = data['licence_key'] as String?;
 
-    final raw = keys.first as Map<String, dynamic>;
+    if (plaintextKey == null) throw const AppException('No licence key returned');
+
     final licence = Licence(
-      id: raw['id'] as String,
-      key: raw['plaintext_key'] as String,
+      id: licenceRaw['id'] as String? ?? plaintextKey,
+      key: plaintextKey,
       userId: userId,
       product: product,
       createdAt: DateTime.now(),
@@ -82,22 +79,26 @@ class ApiLicenceService implements LicenceService {
 
   @override
   Future<Licence> revoke(String licenceId) async {
-    final response = await _client.post('/admin/platform/licences/$licenceId/revoke', body: {'reason': 'Revoked from app'});
+    final response = await _client.post('/licences/$licenceId/revoke');
     return Licence.fromBackendJson(response['data'] as Map<String, dynamic>);
   }
 
   @override
   Future<Licence> renew(String licenceId, LicenceDuration duration) async {
-    final response = await _client.patch(
-      '/admin/platform/licences/$licenceId',
-      body: {'expires_at': duration.asDuration != null ? DateTime.now().add(duration.asDuration!).toIso8601String() : null},
+    final response = await _client.post(
+      '/licences/$licenceId/renew',
+      body: {
+        'expires_at': duration.asDuration != null
+            ? DateTime.now().add(duration.asDuration!).toIso8601String()
+            : null,
+      },
     );
     return Licence.fromBackendJson(response['data'] as Map<String, dynamic>);
   }
 
   @override
   Future<Licence> suspend(String licenceId) async {
-    final response = await _client.post('/admin/platform/licences/$licenceId/suspend', body: {'reason': 'Suspended from app'});
+    final response = await _client.post('/licences/$licenceId/suspend');
     return Licence.fromBackendJson(response['data'] as Map<String, dynamic>);
   }
 }
