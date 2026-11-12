@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/api_config.dart';
 import '../../../core/config/app_environment.dart';
+import '../../../core/device/device_identity.dart';
+import '../../../core/device/device_providers.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../../../core/permissions/permission.dart';
-import '../../../core/storage/secure_storage.dart';
-import '../../../core/storage/token_storage.dart';
+import '../../../core/storage/storage_providers.dart';
 import '../../../core/utilities/startup_trace.dart';
 import '../../notifications/push/phone_push_providers.dart';
 import '../data/api_auth_service.dart';
@@ -14,15 +15,27 @@ import '../data/mock_auth_service.dart';
 import '../domain/auth_session.dart';
 import '../domain/auth_user.dart';
 
-final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
+/// Re-exported so existing call sites (`ref.watch(secureStorageProvider)` from
+/// this file) keep their import path; the providers now live in `core/storage`
+/// because the device and bridge layers need them without importing a feature.
+export '../../../core/storage/storage_providers.dart' show secureStorageProvider, tokenStorageProvider;
+export '../../../core/device/device_providers.dart' show deviceIdentityProvider;
+export '../../../core/storage/storage_providers.dart' show bridgeCredentialStorageProvider;
 
-final tokenStorageProvider = Provider<TokenStorage>(
-  (ref) => TokenStorage(ref.watch(secureStorageProvider)),
-);
-
-final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(baseUrl: ApiConfig.baseUrl, tokenStorage: ref.watch(tokenStorageProvider)),
-);
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final client = ApiClient(
+    baseUrl: ApiConfig.baseUrl,
+    tokenStorage: ref.watch(tokenStorageProvider),
+  );
+  // `X-CP-Device-Id` is sent only after this device has genuinely been bound
+  // to a licence by the backend. Until then the header is absent, which the
+  // backend's `deviceGate` allows for a client while device-binding
+  // enforcement is off — an invented identifier would be a false claim.
+  final identity = ref.watch(deviceIdentityProvider);
+  final bound = DeviceBoundRegistry(identity);
+  client.deviceIdentifierProvider = () async => await bound.isBound() ? await identity.deviceId() : null;
+  return client;
+});
 
 /// The environment this build/run is targeting. Defaults to
 /// [ApiConfig.environment] (a `--dart-define=APP_ENV=...` build flag,

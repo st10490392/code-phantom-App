@@ -75,6 +75,40 @@ abstract final class ApiConfig {
   /// `scanner.review` for every action.
   static const bool scannerReviewActionsEnabled = bool.fromEnvironment('SCANNER_REVIEW_ACTIONS');
 
+  /// Public build flag: `--dart-define=TRADING_CONTROLS_ENABLED=true` turns on
+  /// the pause/resume control surface on the Dashboard. Off by default: the
+  /// backend only queues EA commands while its `ea.remote_commands` feature
+  /// flag is active, and a client-side toggle would require a control JWT the
+  /// bridge does not issue to a phone (see `docs/BRIDGE_INTEGRATION.md`).
+  /// Authorization is always the server's decision — this flag only decides
+  /// whether the UI offers the action at all.
+  static const bool tradingControlsEnabled = bool.fromEnvironment('TRADING_CONTROLS_ENABLED');
+
+  /// The live trading bridge (`c:\CodePhantom`'s `api_server.py`), which is a
+  /// *different* service from the primary API above: it owns MT5 state
+  /// (`/status`, `/positions`, `/analytics`, `/control/toggle`) and the live
+  /// WebSocket stream, and has no user accounts of its own. Never defaulted
+  /// to a real host — a connected build must supply
+  /// `--dart-define=BRIDGE_BASE_URL=http://<tailnet-ip>:8100/api/v1`
+  /// explicitly, so an unconfigured build fails visibly instead of talking to
+  /// someone else's daemon. Empty means "no bridge configured for this build".
+  static const String _explicitBridgeBaseUrl = String.fromEnvironment('BRIDGE_BASE_URL');
+
+  static String get bridgeBaseUrl => _explicitBridgeBaseUrl;
+
+  /// True only when this build is pointed at a live trading bridge.
+  static bool get bridgeConfigured => _explicitBridgeBaseUrl.isNotEmpty;
+
+  /// `ws://`/`wss://` form of [bridgeBaseUrl]'s `/stream` endpoint. HTTPS
+  /// origins become WSS, so a TLS deployment can never be downgraded to a
+  /// plain WebSocket by accident.
+  static Uri? get bridgeStreamUri {
+    if (!bridgeConfigured) return null;
+    final base = Uri.parse(_explicitBridgeBaseUrl);
+    final scheme = base.scheme == 'https' ? 'wss' : 'ws';
+    return base.replace(scheme: scheme, path: '${base.path}/stream');
+  }
+
   /// See the class doc for the placeholder note — this is intentionally
   /// not a real host. Override with `--dart-define=API_BASE_URL=...` for
   /// any production build until a real URL is set here.

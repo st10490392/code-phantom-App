@@ -40,6 +40,12 @@ dependencies:
   dio: ^5.7.0
   package_info_plus: ^9.0.1
 
+  # Live trading feed from the FastAPI bridge (`/api/v1/stream`). Raw
+  # sockets would mean hand-rolled reconnect/backoff/fragment handling;
+  # this package is the standard Flutter-side WebSocket client and exposes
+  # the streams the live-feed service wraps.
+  web_socket_channel: ^3.0.0
+
   # Native phone push. Public Firebase client configuration only.
   firebase_core: 4.15.0
   firebase_messaging: 16.7.0

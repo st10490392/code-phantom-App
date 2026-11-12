@@ -45,6 +45,17 @@ class ApiClient {
   /// access token (single-flight) or throws [SessionExpiredException].
   Future<String> Function()? sessionRefresher;
 
+  /// Set once this device has actually been bound to a licence
+  /// (`POST /licences/activate` succeeded). Every authenticated request then
+  /// carries `X-CP-Device-Id`, which the backend's `deviceGate` verifies
+  /// against the caller's own ACTIVE device row.
+  ///
+  /// Deliberately unset before activation: sending an unbound identifier
+  /// would make `deviceGate` reject every protected request, and a client
+  /// that invented an identifier would be asserting a device binding the
+  /// server never granted.
+  Future<String?> Function()? deviceIdentifierProvider;
+
   final StreamController<void> _sessionExpired = StreamController<void>.broadcast();
 
   /// Fires when an authenticated request finds the session unrecoverable
@@ -117,12 +128,22 @@ class ApiClient {
     bool expectNoContent = false,
   }) async {
     Future<Map<String, dynamic>> send(String? token) async {
+      // A missing device identifier must never break an authorized request:
+      // the header is simply absent, and `deviceGate` treats an absent header
+      // as "not device-bound yet" while binding enforcement is off.
+      final deviceId = requiresAuth ? await _deviceIdentifierOrNull() : null;
       try {
         final response = await _dio.request<dynamic>(
           path,
           data: body,
           queryParameters: query,
-          options: Options(method: method, headers: {if (token != null) 'Authorization': 'Bearer $token'}),
+          options: Options(
+            method: method,
+            headers: {
+              if (token != null) 'Authorization': 'Bearer $token',
+              if (deviceId != null) 'X-CP-Device-Id': deviceId,
+            },
+          ),
         );
         if (expectNoContent) return const <String, dynamic>{};
         final data = response.data;
@@ -150,6 +171,20 @@ class ApiClient {
         await _expire();
         throw const SessionExpiredException();
       }
+    }
+  }
+
+  Future<String?> _deviceIdentifierOrNull() async {
+    final provider = deviceIdentifierProvider;
+    if (provider == null) return null;
+    try {
+      return await provider();
+    } catch (_) {
+      // The identifier comes from platform secure storage, which is not
+      // available in every environment (unit tests, non-Android desktop
+      // builds). Losing the header degrades visibility, never authorization:
+      // the backend decides device binding server-side.
+      return null;
     }
   }
 

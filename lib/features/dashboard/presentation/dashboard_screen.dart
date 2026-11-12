@@ -14,6 +14,8 @@ import '../../notifications/presentation/notifications_providers.dart';
 import '../../scanner/domain/scanner_enums.dart';
 import '../../scanner/presentation/scanner_providers.dart';
 import '../../signals/presentation/signals_providers.dart';
+import '../../trading_status/presentation/trading_status_providers.dart';
+import 'widgets/live_trading_card.dart';
 
 /// Dashboard aggregates read-only summaries from every module's own
 /// providers/repositories — it never talks to a service directly. This is
@@ -65,6 +67,13 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             const _EASummary(),
             const SizedBox(height: AppSpacing.xl),
+            // Live daemon state (MT5, scanner, pause state, open positions,
+            // performance) from the trading bridge, plus the control surface
+            // gated by `ea.control`. Absent when no bridge is configured.
+            if (ref.watch(bridgeClientProvider) != null) ...[
+              const LiveTradingCard(),
+              const SizedBox(height: AppSpacing.xl),
+            ],
           ],
           Text('Notifications', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.sm),
