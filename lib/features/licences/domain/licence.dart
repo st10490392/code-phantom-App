@@ -32,34 +32,40 @@ class Licence {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   factory Licence.fromBackendJson(Map<String, dynamic> json) {
+    // `GET /licences` returns `public.licences` rows: the plaintext key is
+    // never included (it is returned once, by the generate response), so the
+    // display value here is the key prefix.
     return Licence(
       id: json['id'] as String,
-      key: json['plaintext_key'] as String? ?? json['key'] as String? ?? json['prefix'] as String,
-      userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
-      product: json['plan_code'] as String? ?? json['product'] as String? ?? 'Unknown',
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now() : DateTime.now(),
-      activatedAt: json['activated_at'] != null ? DateTime.tryParse(json['activated_at'] as String) : null,
-      expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at'] as String) : null,
+      key: (json['key_prefix'] as String?) ??
+          (json['plaintext_key'] as String?) ??
+          (json['key'] as String?) ??
+          '',
+      userId: (json['user_id'] as String?) ?? (json['userId'] as String?) ?? '',
+      product: (json['service'] as String?) ?? (json['plan_code'] as String?) ?? (json['product'] as String?) ?? 'Unknown',
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      activatedAt: json['activated_at'] == null ? null : DateTime.tryParse(json['activated_at'] as String),
+      expiresAt: json['expires_at'] == null ? null : DateTime.tryParse(json['expires_at'] as String),
       maxDevices: (json['device_limit'] as int?) ?? (json['max_devices'] as int?) ?? 1,
       activeDevices: (json['active_devices'] as int?) ?? 0,
       status: LicenceStatus.values.firstWhere(
-        (s) => s.wireValue == (json['status'] as String? ?? 'UNUSED'),
+        (s) => s.wireValue == (json['status'] as String? ?? 'UNACTIVATED'),
         orElse: () => LicenceStatus.unactivated,
       ),
     );
   }
 
-  Licence copyWith({LicenceStatus? status, DateTime? expiresAt}) {
+  Licence copyWith({LicenceStatus? status, DateTime? expiresAt, String? key, int? activeDevices}) {
     return Licence(
       id: id,
-      key: key,
+      key: key ?? this.key,
       userId: userId,
       product: product,
       createdAt: createdAt,
       activatedAt: activatedAt,
       expiresAt: expiresAt ?? this.expiresAt,
       maxDevices: maxDevices,
-      activeDevices: activeDevices,
+      activeDevices: activeDevices ?? this.activeDevices,
       status: status ?? this.status,
     );
   }

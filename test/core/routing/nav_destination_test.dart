@@ -60,7 +60,11 @@ void main() {
       expect(paths.contains('/signals'), isTrue);
       expect(paths.contains('/ea'), isFalse);
       expect(paths.contains('/clients'), isFalse);
-      expect(paths.contains('/licences'), isFalse);
+      // Licences is now a shipped, backend-backed module and ADMIN's default
+      // grants include `licences.view`, so the tab is visible. Clients is
+      // still mock-only and has no nav destination at all.
+      expect(paths.contains('/licences'), isTrue);
+      expect(paths.contains('/clients'), isFalse);
     });
   });
 }
