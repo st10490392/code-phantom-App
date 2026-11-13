@@ -29,7 +29,9 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "dev.codephantom.code_phantom_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // NDK version is set to the Flutter default (28.2.13676358).
+    // The required NDK is now installed locally.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
