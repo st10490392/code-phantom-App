@@ -69,6 +69,7 @@ class BridgeTradingControlService implements TradingControlService {
     await BridgeClient(baseUrl: ApiConfig.bridgeBaseUrl, controlToken: token).post(
       '/control/toggle',
       body: {'action': action},
+      requiresControlToken: true,
     );
   }
 

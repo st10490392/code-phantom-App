@@ -25,12 +25,17 @@ class BridgeLicenceService {
   final BridgeCredentialStorage _credentials;
   final DeviceIdentity _identity;
 
-  /// `serviceType` is `EA` or `SIGNALS`, enforced by the bridge: an EA key can
-  /// never open the signal stream (`license_manager.verify()` cross-service
-  /// check), so the app must never present the two as interchangeable.
+  /// This app activates `SIGNALS` keys only. An `EA` key authorizes the
+  /// operator's own daemon (the dispatch gate in `signal_pipeline.dispatch()`),
+  /// never a phone, and activation is one-time and hardware-bound — activating
+  /// one here would burn a key that can never authorize this client. The
+  /// bridge's own cross-service check remains the authority; this is the
+  /// client refusing to do something that cannot help the user.
   Future<BridgeLicenceActivation> activate({required String key, required String serviceType}) async {
-    if (serviceType != 'EA' && serviceType != 'SIGNALS') {
-      throw const ValidationException('The trading bridge issues keys for EA or SIGNALS only.');
+    if (serviceType != 'SIGNALS') {
+      throw const ValidationException(
+        'This app activates SIGNALS keys only. An EA key authorizes the trading host, not a phone.',
+      );
     }
     final hardwareId = await _identity.hardwareId();
     final response = await _client.post(

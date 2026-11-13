@@ -37,8 +37,11 @@ class BridgeClient {
     return _send('GET', path, query: query);
   }
 
-  Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body}) async {
-    return _send('POST', path, body: body, requiresControlToken: true);
+  /// POSTs that need the bridge's own `scope=control` JWT pass
+  /// `requiresControlToken: true` (only `/control/toggle` does). Licence and
+  /// push endpoints authenticate with the caller's `SIGNALS` key instead.
+  Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body, bool requiresControlToken = false}) async {
+    return _send('POST', path, body: body, requiresControlToken: requiresControlToken);
   }
 
   /// Diagnostics only: the bridge's liveness/readiness projection

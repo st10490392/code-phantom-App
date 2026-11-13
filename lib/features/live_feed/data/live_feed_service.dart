@@ -167,7 +167,9 @@ class BridgeLiveFeedService implements LiveFeedService {
       return;
     }
 
-    _consecutiveFailures = 0;
+    // The counter is only reset by an authenticated subscription (`hello`),
+    // not by a bare handshake: a bridge that accepts the socket and then drops
+    // it would otherwise be retried forever.
     _messages = _transport.messages.listen(
       _onFrame,
       onError: (_) => _fail('The live feed connection dropped.'),
@@ -190,6 +192,9 @@ class BridgeLiveFeedService implements LiveFeedService {
     final event = parseLiveFeedFrame(payload);
     if (event == null) return;
     if (event is HelloEvent) {
+      // An authenticated subscription proves the bridge is serving us, so the
+      // backoff counter starts over for the next disconnect.
+      _consecutiveFailures = 0;
       _emit(LiveFeedStatus.live);
       return;
     }
@@ -201,8 +206,14 @@ class BridgeLiveFeedService implements LiveFeedService {
   /// One backoff step per failure, capped, and a hard ceiling after which this
   /// service stops retrying — the "no infinite reconnection loop" rule.
   void _fail(String problem) {
+    _heartbeat?.cancel();
+    _heartbeat = null;
+    final messages = _messages;
+    _messages = null;
+    unawaited(messages?.cancel());
+    unawaited(_transport.close());
     _consecutiveFailures++;
-    if (_consecutiveFailures >= _maxConsecutiveFailures) {
+    if (_disposed || !_wantConnection || _consecutiveFailures >= _maxConsecutiveFailures) {
       _emit(LiveFeedStatus.unavailable);
       _problems.add(problem);
       return;
@@ -233,12 +244,10 @@ class BridgeLiveFeedService implements LiveFeedService {
 /// exercised without a live bridge.
 class MockLiveFeedService implements LiveFeedService {
   final _events = StreamController<LiveFeedEvent>.broadcast();
-  final _statuses = StreamController<LiveFeedStatus>.broadcast();
+  late final StreamController<LiveFeedStatus> _statuses = StreamController<LiveFeedStatus>.broadcast(
+    onListen: () => _statuses.add(LiveFeedStatus.unconfigured),
+  );
   final _problems = StreamController<String>.broadcast();
-
-  MockLiveFeedService() {
-    _statuses.add(LiveFeedStatus.unconfigured);
-  }
 
   @override
   Stream<LiveFeedEvent> get events => _events.stream;
