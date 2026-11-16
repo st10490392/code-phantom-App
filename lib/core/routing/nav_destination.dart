@@ -56,6 +56,13 @@ const List<NavDestination> primaryNavDestinations = [
     permission: Permission.licenceAdmin,
   ),
   NavDestination(
+    path: '/integrations',
+    label: 'Integrations',
+    icon: Icons.integration_instructions_outlined,
+    selectedIcon: Icons.integration_instructions,
+    permission: Permission.integrationsManage,
+  ),
+  NavDestination(
     path: '/notifications',
     label: 'Alerts',
     icon: Icons.notifications_outlined,
