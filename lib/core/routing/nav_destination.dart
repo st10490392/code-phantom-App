@@ -67,6 +67,13 @@ const List<NavDestination> primaryNavDestinations = [
     icon: Icons.settings_outlined,
     selectedIcon: Icons.settings,
   ),
+  NavDestination(
+    path: '/integrations',
+    label: 'Integrations',
+    icon: Icons.integration_app_outlined,
+    selectedIcon: Icons.integration_app,
+    permission: Permission.integrationsManage,
+  ),
 ];
 
 /// Filters [primaryNavDestinations] down to what [user] may see: items with

@@ -16,6 +16,7 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
+import '../../features/integrations/presentation/integrations_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
 import '../../features/scanner/presentation/setup_detail_screen.dart';
@@ -61,6 +62,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final user = authState.user;
       final gate = permissionForPath(state.matchedLocation);
+      final isOwnerOnly = isOwnerOnlyPath(state.matchedLocation);
+
+      // Check for owner-only paths first
+      if (isOwnerOnly && (user == null || !user.isOwner)) {
+        return '/dashboard';
+      }
+
+      // Then check regular permission-based gates
       if (gate != null && user != null && !user.isOwner && !user.permissions.has(gate)) {
         return '/dashboard';
       }
@@ -125,6 +134,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const LicenceListScreen(),
           ),
           GoRoute(
+            path: '/integrations',
+            builder: (context, state) => const IntegrationsScreen(),
+          ),
+          GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationCentreScreen(),
           ),
@@ -169,6 +182,13 @@ Permission? permissionForPath(String path) {
   if (path.startsWith('/ea')) return Permission.eaAccess;
   if (path.startsWith('/licences')) return Permission.licenceAdmin;
   return null;
+}
+
+/// Routes that require OWNER role in addition to any permission check.
+/// These are sensitive administrative functions that only the account owner
+/// may access, regardless of granted permissions.
+bool isOwnerOnlyPath(String path) {
+  return path.startsWith('/integrations');
 }
 
 /// Bridges Riverpod's `AuthState` changes into something `go_router`'s
