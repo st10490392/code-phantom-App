@@ -216,7 +216,8 @@ void main() {
       }
     });
 
-    testWidgets('non-owner with integrationsManage can reach /integrations', (tester) async {
+    testWidgets('non-owner with integrationsManage cannot reach /integrations - OWNER only',
+        (tester) async {
       const user = AuthUser(
         id: 'u_integration_user',
         email: 'integration@codephantom.dev',
@@ -229,7 +230,8 @@ void main() {
 
       router.go('/integrations');
       await settle(tester);
-      expect(locationOf(router), '/integrations');
+      expect(locationOf(router), '/dashboard',
+          reason: 'Non-OWNER with permission must be redirected from OWNER-only route');
     });
 
     testWidgets('user without integrationsManage cannot reach /integrations', (tester) async {

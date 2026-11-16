@@ -23,13 +23,19 @@ final integrationsProvider = StreamProvider<List<Integration>>((ref) {
 });
 
 /// Controller for integration mutations (create/revoke) with loading/error state.
+/// Only OWNER role with integrationsManage permission may execute these actions.
 class IntegrationController extends StateNotifier<AsyncValue<void>> {
   IntegrationController(this._ref) : super(const AsyncValue.data(null));
 
   final Ref _ref;
 
-  bool get _canManage =>
-      _ref.read(hasPermissionProvider(Permission.integrationsManage));
+  /// Returns true only if the current user is an OWNER with the permission.
+  bool get _canManage {
+    final user = _ref.read(currentUserProvider);
+    if (user == null) return false;
+    // SECURITY: OWNER role AND permission required (defense in depth)
+    return user.isOwner && _ref.read(hasPermissionProvider(Permission.integrationsManage));
+  }
 
   Future<Integration> createScannerPublisher({required String name}) async {
     if (!_canManage) {
@@ -71,7 +77,7 @@ final integrationControllerProvider =
   (ref) => IntegrationController(ref),
 );
 
-/// Thrown when the acting user lacks [Permission.integrationsManage].
+/// Thrown when the acting user lacks OWNER role and integrationsManage permission.
 /// This is the domain/service-layer enforcement the brief asks for:
 /// even if a widget bug ever put a Create/Revoke control in front of an
 /// unauthorized user, the action itself still fails here, not just at the UI.

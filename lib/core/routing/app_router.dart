@@ -62,6 +62,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final user = authState.user;
       final gate = permissionForPath(state.matchedLocation);
+      final isOwnerOnly = isOwnerOnlyPath(state.matchedLocation);
+
+      // Check for owner-only paths first
+      if (isOwnerOnly && (user == null || !user.isOwner)) {
+        return '/dashboard';
+      }
+
+      // Then check regular permission-based gates
       if (gate != null && user != null && !user.isOwner && !user.permissions.has(gate)) {
         return '/dashboard';
       }
@@ -172,9 +180,15 @@ Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
   if (path.startsWith('/ea')) return Permission.eaAccess;
-  if (path.startsWith('/integrations')) return Permission.integrationsManage;
   if (path.startsWith('/licences')) return Permission.licenceAdmin;
   return null;
+}
+
+/// Routes that require OWNER role in addition to any permission check.
+/// These are sensitive administrative functions that only the account owner
+/// may access, regardless of granted permissions.
+bool isOwnerOnlyPath(String path) {
+  return path.startsWith('/integrations');
 }
 
 /// Bridges Riverpod's `AuthState` changes into something `go_router`'s

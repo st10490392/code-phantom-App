@@ -79,6 +79,9 @@ class Integration {
     );
   }
 
+  /// Serializes for display purposes only.
+  /// SECURITY: plaintextSecret is NEVER included in output — it should be shown
+  /// once in a secure modal and then cleared.
   Map<String, dynamic> toJson() => {
         'id': id,
         'type': type.wireValue,
@@ -88,6 +91,6 @@ class Integration {
         'created_at': createdAt.toIso8601String(),
         if (revokedAt != null) 'revoked_at': revokedAt!.toIso8601String(),
         if (lastUsedAt != null) 'last_used_at': lastUsedAt!.toIso8601String(),
-        if (plaintextSecret != null) 'plaintext_secret': plaintextSecret,
+        // Intentionally excludes plaintextSecret for security
       };
 }
