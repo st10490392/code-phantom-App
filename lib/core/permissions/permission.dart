@@ -10,6 +10,7 @@ enum Permission {
   clientAdmin, // view/manage clients
   licenceAdmin, // generate/revoke/renew licences
   systemAdmin; // limited system controls, below OWNER
+  integrationsManage, // create/revoke platform integrations
 
   String get wireValue => switch (this) {
         Permission.scannerAccess => 'SCANNER_ACCESS',
@@ -20,6 +21,7 @@ enum Permission {
         Permission.clientAdmin => 'CLIENT_ADMIN',
         Permission.licenceAdmin => 'LICENCE_ADMIN',
         Permission.systemAdmin => 'SYSTEM_ADMIN',
+        Permission.integrationsManage => 'INTEGRATIONS_MANAGE',
       };
 
   static Permission? fromWire(String value) {

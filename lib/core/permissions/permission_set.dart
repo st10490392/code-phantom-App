@@ -23,6 +23,7 @@ class PermissionSet {
     Permission.clientAdmin,
     Permission.licenceAdmin,
     Permission.systemAdmin,
+    Permission.integrationsManage,
   });
 
   bool has(Permission permission) => granted.contains(permission);
