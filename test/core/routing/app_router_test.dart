@@ -209,11 +209,47 @@ void main() {
 
       final router = await pumpRouterAs(tester, owner);
 
-      for (final path in ['/scanner', '/signals', '/ea']) {
+      for (final path in ['/scanner', '/signals', '/ea', '/integrations', '/licences']) {
         router.go(path);
         await settle(tester);
         expect(locationOf(router), path, reason: 'OWNER must not be redirected away from $path');
       }
+    });
+
+    testWidgets('non-owner with integrationsManage can reach /integrations', (tester) async {
+      const user = AuthUser(
+        id: 'u_integration_user',
+        email: 'integration@codephantom.dev',
+        displayName: 'Integration User',
+        role: AppRole.internal,
+        permissions: PermissionSet({Permission.integrationsManage}),
+      );
+
+      final router = await pumpRouterAs(tester, user);
+
+      router.go('/integrations');
+      await settle(tester);
+      expect(locationOf(router), '/integrations');
+    });
+
+    testWidgets('user without integrationsManage cannot reach /integrations', (tester) async {
+      const user = AuthUser(
+        id: 'u_regular_admin',
+        email: 'admin@codephantom.dev',
+        displayName: 'Admin',
+        role: AppRole.admin,
+        permissions: PermissionSet({
+          Permission.scannerAccess,
+          Permission.signalsAccess,
+        }), // missing integrationsManage
+      );
+
+      final router = await pumpRouterAs(tester, user);
+
+      router.go('/integrations');
+      await settle(tester);
+      expect(locationOf(router), '/dashboard',
+          reason: 'User without integrationsManage must be redirected away from /integrations');
     });
   });
 

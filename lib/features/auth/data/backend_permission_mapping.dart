@@ -26,6 +26,7 @@ const Map<String, Permission> backendPermissionMap = {
   'licences.view': Permission.licenceAdmin,
   'licences.manage': Permission.licenceAdmin,
   'admin.system': Permission.systemAdmin,
+  'integrations.manage': Permission.integrationsManage,
 };
 
 /// Converts the `permissions: string[]` the backend returns from `/me`

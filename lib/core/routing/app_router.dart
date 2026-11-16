@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/integrations/presentation/integrations_screen.dart';
 import '../../features/licences/presentation/licence_list_screen.dart';
 import '../config/api_config.dart';
 import '../config/app_environment.dart';
@@ -121,6 +122,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(
+            path: '/integrations',
+            builder: (context, state) => const IntegrationsScreen(),
+          ),
+          GoRoute(
             path: '/licences',
             builder: (context, state) => const LicenceListScreen(),
           ),
@@ -167,6 +172,7 @@ Permission? permissionForPath(String path) {
   if (path.startsWith('/scanner')) return Permission.scannerAccess;
   if (path.startsWith('/signals')) return Permission.signalsAccess;
   if (path.startsWith('/ea')) return Permission.eaAccess;
+  if (path.startsWith('/integrations')) return Permission.integrationsManage;
   if (path.startsWith('/licences')) return Permission.licenceAdmin;
   return null;
 }
