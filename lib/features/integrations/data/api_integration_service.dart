@@ -59,10 +59,20 @@ class ApiIntegrationService implements IntegrationService {
 
   @override
   Future<Integration> revoke(String integrationId) async {
-    final response = await _client.post(
+    // Backend returns 204 No Content on success
+    await _client.post(
       '/admin/platform/integrations/${Uri.encodeComponent(integrationId)}/revoke',
     );
-    final integration = Integration.fromBackendJson(response['data'] as Map<String, dynamic>);
+    // Return a minimal revoked integration object
+    final integration = Integration(
+      id: integrationId,
+      type: IntegrationType.scannerPublisher,
+      status: IntegrationStatus.revoked,
+      name: '',
+      scopes: const [],
+      createdAt: DateTime.now(),
+      revokedAt: DateTime.now(),
+    );
     _changed.add(null);
     return integration;
   }

@@ -39,6 +39,18 @@ void main() {
       // fetches via watchIntegrations will not include it (simulating real backend behavior)
     });
 
+    test('watchIntegrations() does not return plaintextSecret', () async {
+      // Create an integration first
+      await service.createScannerPublisher(name: 'Test');
+
+      // Then fetch via watchIntegrations - secrets should not be present
+      final integrations = await service.watchIntegrations().first;
+      for (final integration in integrations) {
+        expect(integration.plaintextSecret, isNull,
+            reason: 'Integration from list response must not contain plaintext secret');
+      }
+    });
+
     test('revoke() changes status to REVOKED and sets revokedAt', () async {
       final integrations = await service.watchIntegrations().first;
       final active = integrations.firstWhere((i) => i.status == IntegrationStatus.active);
@@ -76,6 +88,22 @@ void main() {
 
       expect(revoked.status, IntegrationStatus.revoked);
       expect(revoked.revokedAt, isNotNull);
+    });
+
+    test('Integration.toJson() does not include plaintextSecret', () {
+      final integration = Integration(
+        id: 'test',
+        type: IntegrationType.scannerPublisher,
+        status: IntegrationStatus.active,
+        name: 'Test',
+        scopes: ['scanner.publish'],
+        createdAt: DateTime.now(),
+        plaintextSecret: 'secret_should_not_appear',
+      );
+
+      final json = integration.toJson();
+      expect(json, isNot(contains('plaintext_secret')));
+      expect(json, isNot(contains('secret_should_not_appear')));
     });
   });
 }
