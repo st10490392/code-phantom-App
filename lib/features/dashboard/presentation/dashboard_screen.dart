@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../trading/license_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/permissions/app_role.dart';
@@ -57,13 +58,13 @@ class DashboardScreen extends ConsumerWidget {
           if (hasSignalsAccess) ...[
             Text('Signals', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            const _SignalsSummary(),
+            if (ref.watch(licenseProvider).asData?.value?.signals == true) const _SignalsSummary() else const Text('Trading license required'),
             const SizedBox(height: AppSpacing.xl),
           ],
           if (hasEaAccess) ...[
             Text('EA', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            const _EASummary(),
+            if (ref.watch(licenseProvider).asData?.value?.ea == true) const _EASummary() else const Text('Trading license required'),
             const SizedBox(height: AppSpacing.xl),
           ],
           Text('Notifications', style: Theme.of(context).textTheme.titleMedium),

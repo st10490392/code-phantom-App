@@ -31,6 +31,7 @@ void main() {
       'https://example.test',
       transport: dio,
     );
+    api.scope = 'FULL_ACCESS';
     final path = api.path;
     await api.snapshot();
     await api.settings({'risk_amount_usd': 5});
@@ -46,6 +47,16 @@ void main() {
         'POST $path/commands/FLATTEN_ALL_AND_PAUSE',
       ]),
     );
+    paths.clear();
+    api.scope = 'EA_ONLY';
+    await api.snapshot();
+    expect(paths, ['GET $path/status', 'GET $path/history']);
+    paths.clear();
+    api.scope = 'SIGNALS_ONLY';
+    await api.snapshot();
+    await expectLater(api.flatten(), throwsStateError);
+    await expectLater(api.settings({'risk_pct': 0.5}), throwsStateError);
+    expect(paths, ['GET /market-bias', 'GET $path/alerts']);
     dio.close();
   });
 }

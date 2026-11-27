@@ -5,47 +5,67 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/permissions/permission.dart';
 import '../auth/presentation/auth_providers.dart';
 import 'trading_service.dart';
+import 'license_controller.dart';
+import 'license_forms.dart';
 
-class TradingScreen extends StatefulWidget {
-  const TradingScreen({super.key});
+class TradingScreen extends ConsumerWidget {
+  const TradingScreen({super.key, this.controls = false});
+  final bool controls;
   @override
-  State<TradingScreen> createState() => _TradingScreenState();
-}
-
-class _TradingScreenState extends State<TradingScreen> {
-  TradingProfile profile = TradingProfile.match;
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Trading control')),
-        body: Column(
-          children: [
-            DropdownButton<TradingProfile>(
-              value: profile,
-              items: [
-                for (final item in TradingProfile.values)
-                  DropdownMenuItem(value: item, child: Text(item.label)),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => profile = v);
-              },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final license = ref.watch(licenseProvider);
+    final api = license.asData?.value;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(controls ? 'EA controls' : 'Market signals'),
+        actions: [
+          if (api != null)
+            TextButton(
+              onPressed: () => ref.read(licenseProvider.notifier).clear(),
+              child: const Text('Change license'),
             ),
-            Expanded(
-              child: _AccountView(key: ValueKey(profile), profile: profile),
-            ),
-          ],
-        ),
-      );
+        ],
+      ),
+      body: license.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : api == null
+              ? ActivationForm(restoreError: license.hasError)
+              : _AccountView(
+                  key: ObjectKey(api),
+                  profile: api.profile,
+                  service: api,
+                  controls: controls,
+                ),
+    );
+  }
 }
 
 class _AccountView extends ConsumerStatefulWidget {
-  const _AccountView({super.key, required this.profile});
+  const _AccountView({
+    super.key,
+    required this.profile,
+    required this.service,
+    required this.controls,
+  });
+  final TradingService service;
+  final bool controls;
   final TradingProfile profile;
   @override
   ConsumerState<_AccountView> createState() => _AccountState();
 }
 
 class _AccountState extends ConsumerState<_AccountView> {
-  final token = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    api = widget.service;
+    controls = widget.controls;
+    timer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (ModalRoute.of(context)?.isCurrent == true) refresh();
+    });
+    refresh();
+  }
+
   TradingService? api;
   Json? data;
   String? error;
@@ -54,8 +74,7 @@ class _AccountState extends ConsumerState<_AccountView> {
   @override
   void dispose() {
     timer?.cancel();
-    api?.dio.close(force: true);
-    token.dispose();
+
     super.dispose();
   }
 
@@ -88,24 +107,6 @@ class _AccountState extends ConsumerState<_AccountView> {
       }
     } finally {
       if (mounted) setState(() => busy = false);
-    }
-  }
-
-  void connect() {
-    if (token.text.trim().isEmpty) return;
-    try {
-      api = TradingService(
-        widget.profile,
-        token.text,
-        const String.fromEnvironment('TRADING_API_URL'),
-      );
-      token.clear();
-      timer = Timer.periodic(const Duration(seconds: 15), (_) {
-        if (ModalRoute.of(context)?.isCurrent == true) refresh();
-      });
-      refresh();
-    } catch (e) {
-      setState(() => error = message(e));
     }
   }
 
@@ -149,7 +150,7 @@ class _AccountState extends ConsumerState<_AccountView> {
       builder: (ctx) => AlertDialog(
         title: const Text('Flatten all and pause?'),
         content: Text(
-          'Close all paper positions and lock ${widget.profile.account}.',
+          'Flatten positions and pause execution for ${widget.profile.account}.',
         ),
         actions: [
           TextButton(
@@ -224,6 +225,9 @@ class _AccountState extends ConsumerState<_AccountView> {
     };
     return [
       heading('Account status'),
+      Text(
+        'Broker execution requested: ${s['broker_execution_requested'] == true ? 'yes' : 'no'} ? Shadow ledger',
+      ),
       Text('Equity ${s['equity']} · Floating P&L ${s['floating_pnl']}'),
       Text(
         'Daily loss ${s['daily_loss_pct']}% · Drawdown ${s['drawdown_pct']}%',
@@ -281,22 +285,12 @@ class _AccountState extends ConsumerState<_AccountView> {
   @override
   Widget build(BuildContext context) {
     final allowed = ref.watch(hasPermissionProvider(Permission.eaControl));
+    final locked = controls ? !widget.service.ea : !widget.service.signals;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text('Account · ${widget.profile.account}'),
-        if (api == null) ...[
-          TextField(
-            controller: token,
-            obscureText: true,
-            autocorrect: false,
-            enableSuggestions: false,
-            decoration:
-                const InputDecoration(labelText: 'Account control token'),
-            onSubmitted: (_) => connect(),
-          ),
-          FilledButton(onPressed: connect, child: const Text('Connect')),
-        ] else ...[
+        ...[
           Wrap(
             children: [
               ChoiceChip(
@@ -318,26 +312,16 @@ class _AccountState extends ConsumerState<_AccountView> {
           ),
           if (busy) const LinearProgressIndicator(),
         ],
-        if (api != null)
-          TextButton(
-            onPressed: busy
-                ? null
-                : () {
-                    timer?.cancel();
-                    api?.dio.close(force: true);
-                    setState(() {
-                      api = null;
-                      data = null;
-                      error = null;
-                    });
-                  },
-            child: const Text('Disconnect'),
-          ),
         if (error != null) Text(error!),
-        if (data != null) ...[
-          if (data!['status']['paper_mode'] == true)
-            const Text('Paper account'),
-          if (controls) ...risk(data!, allowed) else ...market(data!),
+        if (locked) const Text('Locked for this license scope.'),
+        if (!locked && data != null) ...[
+          if (data!['status']?['paper_mode'] == true)
+            const Text('Shadow account ledger'),
+          if (controls) ...[
+            if (allowed) StartForm(api: widget.service, onStarted: refresh),
+            ...risk(data!, allowed),
+          ] else
+            ...market(data!),
         ],
       ],
     );

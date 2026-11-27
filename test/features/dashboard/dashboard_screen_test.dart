@@ -30,7 +30,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
-  testWidgets('OWNER sees every production module summary on the dashboard', (tester) async {
+  testWidgets('Owner sees module headings with protected summaries locked before activation', (tester) async {
     const owner = AuthUser(
       id: 'u_owner',
       email: 'owner@codephantom.dev',
@@ -40,13 +40,14 @@ void main() {
     );
 
     await pumpDashboardAs(tester, owner);
+    expect(find.text('Trading license required'), findsNWidgets(2));
 
     expect(find.text(_scanner), findsOneWidget);
     expect(find.text(_signals), findsOneWidget);
     expect(find.text(_ea), findsOneWidget);
   });
 
-  testWidgets('an EA-only client sees only the EA summary',
+  testWidgets('An unlicensed EA client sees only the locked EA section',
       (tester) async {
     const eaClient = AuthUser(
       id: 'u_ea',

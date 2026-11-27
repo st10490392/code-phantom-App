@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/routing/app_router.dart';
 import 'features/notifications/push/phone_push_listener.dart';
 import 'core/theme/app_theme.dart';
+import 'features/trading/trading_alerts.dart';
 import 'core/theme/brand_assets.dart';
 
 class CodePhantomApp extends ConsumerWidget {
@@ -24,8 +25,9 @@ class CodePhantomApp extends ConsumerWidget {
       darkTheme: theme,
       themeMode: ThemeMode.dark,
       routerConfig: router,
-      builder: (context, child) => PhonePushListener(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => PhonePushListener(
+        child: TradingAlerts(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }
-

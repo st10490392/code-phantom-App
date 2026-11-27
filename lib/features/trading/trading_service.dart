@@ -11,6 +11,11 @@ enum TradingProfile {
       defaultValue: 'prop_firm_matchtrader',
     ),
   ),
+  core(
+    'Prop EA Mode',
+    'prop_firm_core',
+    String.fromEnvironment('PROP_CORE_ACCOUNT', defaultValue: 'prop_firm_core'),
+  ),
   deriv(
     'MT5 Bot Mode',
     'deriv_synthetics_mt5',
@@ -46,32 +51,38 @@ class TradingService {
   }
   final TradingProfile profile;
   final Dio dio;
+  String scope = '', login = '', server = '';
+  bool get signals => scope == 'FULL_ACCESS' || scope == 'SIGNALS_ONLY';
+  bool get ea => scope == 'FULL_ACCESS' || scope == 'EA_ONLY';
   String get path => '/accounts/${Uri.encodeComponent(profile.account)}';
   Future<Json> snapshot() async {
-    final status = (await dio.get<Json>('$path/status')).data!;
-    if (status['profile'] != profile.profile) {
-      throw const FormatException(
-        'Account is bound to a different trading profile.',
-      );
+    final out = <String, dynamic>{};
+    if (ea) {
+      final status = (await dio.get<Json>('$path/status')).data!;
+      if (status['profile'] != profile.profile) {
+        throw const FormatException('Account profile mismatch.');
+      }
+      out['status'] = status;
+      out['history'] = (await dio.get('$path/history')).data;
     }
-    final parts = await Future.wait([
-      dio.get('/market-bias', queryParameters: {'account': profile.account}),
-      dio.get('$path/alerts'),
-      dio.get('$path/history'),
-    ]);
-    return {
-      'status': status,
-      'bias': parts[0].data,
-      'alerts': parts[1].data,
-      'history': parts[2].data,
-    };
+    if (signals) {
+      out['bias'] = (await dio.get(
+        '/market-bias',
+        queryParameters: {'account': profile.account},
+      ))
+          .data;
+      out['alerts'] = (await dio.get('$path/alerts')).data;
+    }
+    return out;
   }
 
   Future<void> settings(Json patch) async {
+    if (!ea) throw StateError('EA license required');
     await dio.patch('$path/settings', data: patch);
   }
 
   Future<void> flatten() async {
+    if (!ea) throw StateError('EA license required');
     await dio.post('$path/commands/FLATTEN_ALL_AND_PAUSE');
   }
 }

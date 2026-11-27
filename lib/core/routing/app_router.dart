@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/licences/presentation/licence_list_screen.dart';
+import '../../features/trading/owner_licenses.dart';
 import '../config/api_config.dart';
 import '../config/app_environment.dart';
 import '../layout/breakpoints.dart';
@@ -15,7 +15,7 @@ import '../../features/auth/presentation/register_placeholder_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/ea/presentation/ea_dashboard_screen.dart';
+
 import '../../features/trading/trading_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
@@ -23,7 +23,7 @@ import '../../features/scanner/presentation/setup_detail_screen.dart';
 import '../../features/settings/presentation/about_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/signals/presentation/signals_screen.dart';
+
 import '../permissions/permission.dart';
 import 'app_shell.dart';
 
@@ -119,12 +119,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
+          GoRoute(path: '/signals', builder: (context, state) => const TradingScreen()),
           GoRoute(path: '/ea/trading', builder: (context,state) => const TradingScreen()),
-          GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
+          GoRoute(path: '/ea', builder: (context, state) => const TradingScreen(controls:true)),
           GoRoute(
             path: '/licences',
-            builder: (context, state) => const LicenceListScreen(),
+            builder: (context, state) => const OwnerLicenses(),
           ),
           GoRoute(
             path: '/notifications',
