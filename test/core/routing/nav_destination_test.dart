@@ -60,7 +60,9 @@ void main() {
       expect(paths.contains('/signals'), isTrue);
       expect(paths.contains('/ea'), isFalse);
       expect(paths.contains('/clients'), isFalse);
-      expect(paths.contains('/licences'), isFalse);
+      expect(paths.contains('/licences'), isTrue);
+      final revoked = _userWith(AppRole.admin, admin.permissions.revoke(Permission.licenceAdmin));
+      expect(visibleNavDestinationsFor(revoked).map((d) => d.path), isNot(contains('/licences')));
     });
   });
 }

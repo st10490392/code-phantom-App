@@ -8,6 +8,7 @@ import '../data/api_licence_service.dart';
 import '../data/licence_service.dart';
 import '../data/mock_licence_service.dart';
 import '../domain/licence.dart';
+import '../../auth/presentation/auth_providers.dart' show appEnvironmentProvider;
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
 

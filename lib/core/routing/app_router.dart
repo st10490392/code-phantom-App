@@ -16,6 +16,7 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/ea/presentation/ea_dashboard_screen.dart';
+import '../../features/trading/trading_screen.dart';
 import '../../features/notifications/presentation/notification_centre_screen.dart';
 import '../../features/scanner/presentation/scanner_screen.dart';
 import '../../features/scanner/presentation/setup_detail_screen.dart';
@@ -119,6 +120,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(path: '/signals', builder: (context, state) => const SignalsScreen()),
+          GoRoute(path: '/ea/trading', builder: (context,state) => const TradingScreen()),
           GoRoute(path: '/ea', builder: (context, state) => const EADashboardScreen()),
           GoRoute(
             path: '/licences',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/permissions/permission.dart';
 import '../../../core/config/app_environment.dart';
@@ -24,7 +25,7 @@ class EADashboardScreen extends ConsumerWidget {
     final accountAsync = ref.watch(primaryEAAccountProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('EA Monitor')),
+      appBar: AppBar(title: const Text('EA Monitor'), actions: [TextButton(onPressed: () => context.push('/ea/trading'), child: const Text('Trading control'))]),
       body: accountAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: 'Could not load EA account.\n$e'),

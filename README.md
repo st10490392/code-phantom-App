@@ -189,3 +189,20 @@ flutter build appbundle --release
 ## Project status update — 13 October 2026
 
 Android RC15 (`1.0.1-rc2`, code 15) signed privately, [draft PR #22](https://github.com/st10490392/code-phantom-App/pull/22), 272 Flutter tests reported passing. Staging OWNER login and persistent phone-alert setting verified; one active Android push registration exists. **Real FCM delivery not yet verified.** A later staging test-button build was started, but final signing not confirmed. This default-branch README documents an early baseline, not all later draft-branch features.
+
+## Trading control (Flutter mobile)
+
+Start the trading repository's paper control service with its account registry and market-data bridge, and expose it through a device-reachable HTTPS address with a trusted certificate. The trading URL is separate from the existing CodePhantom login API. Use the actual account keys from the server's `PAPER_ACCOUNTS_JSON` registry for the two account defines.
+
+```sh
+flutter pub get
+flutter run --dart-define=TRADING_API_URL=https://trading.example.com --dart-define=MATCHTRADER_ACCOUNT=desk1 --dart-define=DERIV_ACCOUNT=synthetics1
+```
+
+Keep the existing app environment and login settings for your deployment. The trading URL is the API root, without an endpoint suffix. Sign in with EA access, open **EA Monitor → Trading control**, choose an account, and enter that account's **mobile control bearer token**. The app keeps this token in memory for the selected view. Switching accounts or leaving the screen discards it. Keep tokens out of source, build defines, and URLs.
+
+- **Manual Signal Mode** requires a server account bound to `prop_firm_matchtrader`. The Market Direction & Signals tab shows the latest bias, alignment, liquidity levels, and accepted setup alerts for manual execution.
+- **MT5 Bot Mode** requires `deriv_synthetics_mt5`. Bot & Risk Controls shows paper status, positions and history. Users with EA control permission can change the applicable percentage or USD limits, toggle setups, or confirm an account-specific emergency flatten and pause.
+- The active view polls every 15 seconds and has manual refresh. Paper status and stale market data are labeled. The flatten command operates on the configured backend paper account.
+
+Run `flutter analyze` and `flutter test` from the Flutter repository root.

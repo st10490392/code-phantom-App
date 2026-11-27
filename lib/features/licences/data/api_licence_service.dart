@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../scanner/data/api_scanner_service.dart' show pollingStream;
 import '../../../core/network/api_client.dart';
 import '../../../core/network/app_exceptions.dart';
 import '../domain/licence.dart';
@@ -59,7 +60,7 @@ class ApiLicenceService implements LicenceService {
     final licenceRaw = data['licence'] as Map<String, dynamic>? ?? response;
     final plaintextKey = data['licence_key'] as String?;
 
-    if (plaintextKey == null) throw const AppException('No licence key returned');
+    if (plaintextKey == null) throw const ServerException('No licence key returned');
 
     final licence = Licence(
       id: licenceRaw['id'] as String? ?? plaintextKey,
