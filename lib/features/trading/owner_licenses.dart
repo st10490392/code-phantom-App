@@ -21,6 +21,7 @@ class _OwnerState extends ConsumerState<OwnerLicenses> {
       created = '',
       error = '',
       expiry = '';
+  String issuedAccount = '';
   bool busy = false;
   List rows = [];
   @override
@@ -94,7 +95,7 @@ class _OwnerState extends ConsumerState<OwnerLicenses> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Trading licenses')),
+      appBar: AppBar(title: const Text('Owner License Key Generator')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -144,6 +145,7 @@ class _OwnerState extends ConsumerState<OwnerLicenses> {
                           },
                         );
                         created = r.data!['license_key'];
+                        issuedAccount = account;
                       }),
               child: const Text('Generate key'),
             ),
@@ -162,6 +164,32 @@ class _OwnerState extends ConsumerState<OwnerLicenses> {
                         SharePlus.instance.share(ShareParams(text: created)),
                     child: const Text('Share'),
                   ),
+                  for (final profile in TradingProfile.values
+                      .where((p) => p.account == issuedAccount))
+                    TextButton(
+                      onPressed: () async {
+                        final activated = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => Scaffold(
+                              appBar: AppBar(
+                                title: const Text('Activate on this device'),
+                              ),
+                              body: ActivationForm(
+                                restoreError: false,
+                                issuedKey: created,
+                                initialProfile: profile,
+                              ),
+                            ),
+                          ),
+                        );
+                        if (mounted && activated == true) {
+                          setState(() => created = '');
+                          await run();
+                        }
+                      },
+                      child: const Text('Activate on this device'),
+                    ),
                   TextButton(
                     onPressed: () => setState(() => created = ''),
                     child: const Text('Hide'),

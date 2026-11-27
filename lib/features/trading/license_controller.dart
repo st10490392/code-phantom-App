@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
+import '../../core/config/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/storage/secure_storage.dart';
 import '../auth/presentation/auth_providers.dart';
 import 'trading_service.dart';
 
 final licenseStore = Provider((ref) => SecureStorage());
-const tradingUrl = String.fromEnvironment('TRADING_API_URL');
+const tradingUrl = ApiConfig.tradingBaseUrl;
 final licenseProvider =
     AsyncNotifierProvider<LicenseController, TradingService?>(
   LicenseController.new,

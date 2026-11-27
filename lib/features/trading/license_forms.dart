@@ -15,14 +15,21 @@ String apiError(Object error) {
 }
 
 class ActivationForm extends ConsumerStatefulWidget {
-  const ActivationForm({super.key, required this.restoreError});
+  const ActivationForm({
+    super.key,
+    required this.restoreError,
+    this.issuedKey,
+    this.initialProfile,
+  });
+  final String? issuedKey;
+  final TradingProfile? initialProfile;
   final bool restoreError;
   @override
   ConsumerState<ActivationForm> createState() => _ActivationState();
 }
 
 class _ActivationState extends ConsumerState<ActivationForm> {
-  TradingProfile profile = TradingProfile.match;
+  late TradingProfile profile = widget.initialProfile ?? TradingProfile.match;
   String keyText = '', login = '', server = '', message = '';
   bool busy = false;
   Future<void> submitActivation() async {
@@ -30,7 +37,8 @@ class _ActivationState extends ConsumerState<ActivationForm> {
     try {
       await ref
           .read(licenseProvider.notifier)
-          .activate(profile, keyText, login, server);
+          .activate(profile, widget.issuedKey ?? keyText, login, server);
+      if (mounted && widget.issuedKey != null) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) setState(() => message = apiError(e));
     } finally {
@@ -52,15 +60,18 @@ class _ActivationState extends ConsumerState<ActivationForm> {
               for (final p in TradingProfile.values)
                 DropdownMenuItem(value: p, child: Text(p.label)),
             ],
-            onChanged: busy ? null : (v) => setState(() => profile = v!),
+            onChanged: busy || widget.initialProfile != null
+                ? null
+                : (v) => setState(() => profile = v!),
           ),
-          TextField(
-            obscureText: true,
-            autocorrect: false,
-            enableSuggestions: false,
-            decoration: const InputDecoration(labelText: 'License key'),
-            onChanged: (v) => keyText = v,
-          ),
+          if (widget.issuedKey == null)
+            TextField(
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: const InputDecoration(labelText: 'License key'),
+              onChanged: (v) => keyText = v,
+            ),
           TextField(
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(

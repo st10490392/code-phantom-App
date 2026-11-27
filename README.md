@@ -210,3 +210,21 @@ In **EA ? Bot & Risk Controls ? EA setup & start**, verify the bound MT5 ID/serv
 Signals use the existing Firebase mobile configuration (PUSH_ENABLED, PUSH_FIREBASE_PROJECT_ID, PUSH_FIREBASE_APP_ID, PUSH_FIREBASE_API_KEY and PUSH_FIREBASE_SENDER_ID). Use the same Firebase project as the trading backend and allow OS notifications. Signal-capable devices register FCM tokens on activation and refresh. While the app is open, a five-second account event poll also runs without Firebase. Fresh signals produce a banner and system alert sound; foreground FCM wakes the same sequence-based reader. Background delivery requires FCM and platform permission. Sound follows OS settings. To retire a registered device, reset or revoke its license in the owner screen.
 
 Run `flutter analyze` and `flutter test` from the repository root.
+
+### Android release APK and Railway configuration
+
+Build the Android release APK from the Flutter repository root:
+
+```sh
+flutter build apk --release
+```
+
+For a connected production build, supply both service URLs at build time. Replace the example hosts with the deployed URLs. The identity API handles sign-in, and the trading control service handles licenses and signals.
+
+```sh
+flutter build apk --release --dart-define=APP_ENV=production --dart-define=API_BASE_URL=https://identity.example.com/api/v1 --dart-define=RAILWAY_BACKEND_URL=https://your-service.up.railway.app
+```
+
+The APK is written to `build/app/outputs/flutter-apk/app-release.apk`. An explicit `TRADING_API_URL` overrides `RAILWAY_BACKEND_URL`. If your engine identifiers differ from the app defaults, include the corresponding account defines shown above.
+
+After normal Owner sign-in the app opens **Owner License Key Generator**. Enter the trading server's owner master credential to unlock issuance. Keep this secret out of build defines. Generate a key for the configured engine account, then select **Activate on this device**. EA_ONLY and FULL_ACCESS require the MT5 login and exact server. After activation the generator refreshes its list of device and MT5 bindings. Market Direction & Signals displays the model's confidence percentage and commentary when a fresh assessment is available.

@@ -40,6 +40,10 @@ import 'app_environment.dart';
 ///      real production backend exists; set it (or pass `API_BASE_URL` at
 ///      build time) before ever shipping a production build.
 abstract final class ApiConfig {
+  static const tradingBaseUrl = String.fromEnvironment(
+    'TRADING_API_URL',
+    defaultValue: String.fromEnvironment('RAILWAY_BACKEND_URL'),
+  );
   static AppEnvironment get environment =>
       AppEnvironment.fromString(const String.fromEnvironment('APP_ENV', defaultValue: 'mock'));
 

@@ -185,10 +185,17 @@ class _AccountState extends ConsumerState<_AccountView> {
           ),
         for (final l in ((item.value['liquidity'] as Json?) ?? {}).entries)
           Text('${l.key} high ${l.value['high']} · low ${l.value['low']}'),
-        if (item.value['ai'] != null)
-          Text(
-            '${item.value['ai']['commentary']} · confidence ${item.value['ai']['confidence']}',
-          ),
+        if (item.value['ai']
+            case {
+              'confidence': final num score,
+              'commentary': final String note
+            }
+            when item.value['stale'] != true &&
+                item.value['ai']['available'] != false) ...[
+          Text('AI confidence: ${(score * 100).toStringAsFixed(1)}%'),
+          Text('AI market direction: $note'),
+        ] else
+          const Text('AI assessment unavailable'),
       ],
       heading('Setup alerts'),
       if (alerts.isEmpty) const Text('No setup alerts yet.'),

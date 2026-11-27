@@ -49,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = _emailController.text.trim();
     try {
       await ref.read(authControllerProvider.notifier).login(email, _passwordController.text);
-      if (mounted) context.go('/dashboard');
+      // The router selects the landing screen after authentication.
     } on EmailNotVerifiedException {
       // Actionable, not just a message: send the user straight to the
       // resend/verify flow instead of leaving them stuck on a login error.

@@ -58,7 +58,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return loggingIn ? null : _withReturn('/login', returnTo);
       }
       // authenticated
-      if (loggingIn || atSplash || atRoot) return returnTo ?? '/dashboard';
+      if (loggingIn || atSplash || atRoot) return returnTo ?? (authState.user?.isOwner == true ? '/licences' : '/dashboard');
 
       final user = authState.user;
       final gate = permissionForPath(state.matchedLocation);

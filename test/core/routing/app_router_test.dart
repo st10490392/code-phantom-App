@@ -208,6 +208,8 @@ void main() {
       );
 
       final router = await pumpRouterAs(tester, owner);
+      expect(locationOf(router), '/licences');
+      expect(find.text('Owner License Key Generator'), findsOneWidget);
 
       for (final path in ['/scanner', '/signals', '/ea']) {
         router.go(path);
